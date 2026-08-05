@@ -14,10 +14,10 @@ class UserProfileManager(BaseUserManager):
             raise ValueError('Users must have an email address')
 
         email = self.normalize_email(email)
-        user = self.mode(email=email, name=name)
+        user = self.model(email=email, name=name)
 
-        user.set_passord(password)
-        user.save(using=self.db)
+        user.set_password(password)
+        user.save(using=self._db)
 
         return user
 
@@ -29,7 +29,7 @@ class UserProfileManager(BaseUserManager):
         user.is_superuser = True
         user.is_staff = True
         user.save(using=self._db)
-        return user 
+        return user
 
 class UserProfile(AbstractBaseUser, PermissionsMixin):
     """Represents a user profile inside our system."""
@@ -51,8 +51,8 @@ class UserProfile(AbstractBaseUser, PermissionsMixin):
 
     def get_short_name(self):
         """Use to get a user short name."""
-        return self.get_full_name
+        return self.name
 
-    def __str___(self):
+    def __str__(self):
         """Django uses this when it needs to convert the object to a string."""
         return self.email
