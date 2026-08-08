@@ -122,7 +122,7 @@ class UserProfileViewset(viewsets.ModelViewSet):
 
 class LoginViewSet(viewsets.ViewSet):
     """Checks email and password and returns an auth token."""
-    
+
     serializer_class = AuthTokenSerializer
 
     def create(self, request):
