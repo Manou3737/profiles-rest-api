@@ -7,7 +7,7 @@ PROJECT_GIT_URL='https://github.com/Manou3737/profiles-rest-api.git'
 
 PROJECT_BASE_PATH='/usr/local/apps'
 VIRTUALENV_BASE_PATH='/usr/local/virtualenvs'
-
+"""
 # Set Ubuntu Language
 locale-gen en_GB.UTF-8
 
@@ -16,6 +16,14 @@ echo "Installing dependencies..."
 apt-get update
 #apt-get install -y python3-dev python3-venv sqlite python-pip supervisor nginx git
 apt-get install -y python3-dev python3-venv sqlite3 python3-pip supervisor nginx git
+"""
+
+echo "Installing dependencies..."
+apt-get update
+apt-get install -y locales python3-dev python3-venv sqlite3 python3-pip supervisor nginx git
+
+# Set Ubuntu Language
+locale-gen en_GB.UTF-8
 
 mkdir -p $PROJECT_BASE_PATH
 git clone $PROJECT_GIT_URL $PROJECT_BASE_PATH/profiles-rest-api
