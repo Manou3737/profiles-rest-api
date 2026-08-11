@@ -21,7 +21,7 @@ locale-gen en_GB.UTF-8
 
 mkdir -p $PROJECT_BASE_PATH
 if [ ! -d "$PROJECT_BASE_PATH/profiles-rest-api/.git" ]; then
- git clone $PROJECT_GIT_URL $PROJECT_BASE_PATH/profiles-rest-api
+ git clone --branch modernize-python314 $PROJECT_GIT_URL $PROJECT_BASE_PATH/profiles-rest-api
 fi
 
 mkdir -p $VIRTUALENV_BASE_PATH
