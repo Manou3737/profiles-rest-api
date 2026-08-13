@@ -7,7 +7,7 @@ from rest_framework import status
 from rest_framework.authentication import TokenAuthentication
 from rest_framework import filters
 
-from rest_framework.authtoken.serializers import AuthTokenSerializer
+
 from rest_framework.authtoken.models import Token
 from rest_framework.permissions import IsAuthenticatedOrReadOnly
 from rest_framework.permissions import IsAuthenticated
@@ -126,7 +126,7 @@ class UserProfileViewset(viewsets.ModelViewSet):
 class LoginViewSet(viewsets.ViewSet):
     """Checks email and password and returns an auth token."""
 
-    serializer_class = AuthTokenSerializer
+    serializer_class = serializers.AuthTokenSerializer
 
     def create(self, request):
         """Validate credentials and return an auth token."""
