@@ -1,3 +1,4 @@
 Django==6.1
 djangorestframework==3.18.0
 pytz==2026.3.post1
+gunicorn==26.0.0
