@@ -69,7 +69,8 @@ class PublicUserApiTests(TestCase):
         response = self.client.post('/api/login/', payload)
 
         self.assertEqual(response.status_code, 200)
-        self.assertIn('token', response.data)
+        self.assertIn('access', response.data)
+        self.assertIn('refresh', response.data)
 
     def test_login_invalid_credentials(self):
         """Test that invalid credentials are rejected."""

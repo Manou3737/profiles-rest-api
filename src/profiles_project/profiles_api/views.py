@@ -4,11 +4,12 @@ from rest_framework.views import APIView
 from rest_framework.response import Response
 from rest_framework import viewsets
 from rest_framework import status
-from rest_framework.authentication import TokenAuthentication
+
+from rest_framework_simplejwt.authentication import JWTAuthentication
 from rest_framework import filters
 
 
-from rest_framework.authtoken.models import Token
+from rest_framework_simplejwt.tokens import RefreshToken
 from rest_framework.permissions import IsAuthenticatedOrReadOnly
 from rest_framework.permissions import IsAuthenticated
 
@@ -118,18 +119,18 @@ class UserProfileViewset(viewsets.ModelViewSet):
 
     serializer_class = serializers.UserProfileSerializer
     queryset = models.UserProfile.objects.all()
-    authentication_classes = (TokenAuthentication,)
+    authentication_classes = (JWTAuthentication,)
     permission_classes = (permissions.UpdateOwnProfile,)
     filter_backends = (filters.SearchFilter,)
     search_fields =('name', 'email',)
 
 class LoginViewSet(viewsets.ViewSet):
-    """Checks email and password and returns an auth token."""
+    """Checks email and password and returns JWT tokens."""
 
     serializer_class = serializers.AuthTokenSerializer
 
     def create(self, request):
-        """Validate credentials and return an auth token."""
+        """Validate credentials and return JWT token."""
 
         serializer = self.serializer_class(
             data=request.data,
@@ -139,16 +140,18 @@ class LoginViewSet(viewsets.ViewSet):
         serializer.is_valid(raise_exception=True)
 
         user = serializer.validated_data['user']
-        token, _ = Token.objects.get_or_create(user=user)
+
+        refresh = RefreshToken.for_user(user)
 
         return Response({
-            'token': token.key
+            'refresh': str(refresh),
+            'access': str(refresh.access_token),
         })
 
 class UserProfileFeedViewset(viewsets.ModelViewSet):
     """Handles creating, reading and updating profile feed items."""
 
-    authentication_classes = (TokenAuthentication,)
+    authentication_classes = (JWTAuthentication,)
     serializer_class = serializers.ProfileFeedItemSerializer
     queryset = models.ProfileFeedItem.objects.all()
     permission_classes = (permissions.PostOwnStatus, IsAuthenticated)
