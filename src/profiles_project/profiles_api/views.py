@@ -370,6 +370,39 @@ class PasswordResetConfirmViewSet(viewsets.ViewSet):
             status=status.HTTP_200_OK,
         )
 
+class AccountStatusViewSet(viewsets.ViewSet):
+    """Handles account activation and deactivation."""
+
+    authentication_classes = (JWTAuthentication,)
+    permission_classes = (permissions.IsStaffOrOwnDeactivation,)
+    serializer_class = serializers.AccountStatusSerializer
+
+    def partial_update(self, request, pk=None):
+        """Activate or deactivate a user account."""
+
+        try:
+            user = models.UserProfile.objects.get(pk=pk)
+        except models.UserProfile.DoesNotExist:
+            return Response(
+                {'detail': 'User not found.'},
+                status=status.HTTP_404_NOT_FOUND,
+            )
+        self.check_object_permissions(request, user)
+        serializer = self.serializer_class(data=request.data)
+        serializer.is_valid(raise_exception=True)
+
+        user.is_active = serializer.validated_data['is_active']
+        user.save(update_fields=['is_active'])
+
+        return Response(
+            {
+                'id': user.id,
+                'email': user.email,
+                'is_active': user.is_active,
+            },
+            status=status.HTTP_200_OK,
+        )
+
 class UserProfileFeedViewset(viewsets.ModelViewSet):
     """Handles creating, reading and updating profile feed items."""
 

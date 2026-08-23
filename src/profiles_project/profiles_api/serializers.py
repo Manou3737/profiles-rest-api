@@ -180,3 +180,8 @@ class UserProfileUpdateSerializer(serializers.ModelSerializer):
             'email',
             'email_verified',
         )
+
+class AccountStatusSerializer(serializers.Serializer):
+    """Serializer for account activation and deactivation."""
+
+    is_active = serializers.BooleanField()

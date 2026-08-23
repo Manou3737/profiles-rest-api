@@ -22,3 +22,22 @@ class PostOwnStatus(permissions.BasePermission):
             return True
 
         return obj.user_profile.id == request.user.id
+
+class IsStaffOrOwnDeactivation(permissions.BasePermission):
+    """Allows staff users to manage accounts or users to deactivate themselves."""
+
+    def has_object_permission(self, request, view, obj):
+        """Check account status management permissions."""
+
+        if not request.user.is_authenticated:
+            return False
+
+        # Staff users can activate or deactivate any account.
+        if request.user.is_staff:
+            return True
+
+        # Regular users can only deactivate their own account.
+        return (
+            obj.id == request.user.id
+            and request.data.get('is_active') is False
+        )

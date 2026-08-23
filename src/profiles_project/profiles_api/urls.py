@@ -49,6 +49,12 @@ router.register(
     basename='verify-email'
 )
 
+router.register(
+    'account-status',
+    views.AccountStatusViewSet,
+    basename='account-status'
+)
+
 router.register('feed', views.UserProfileFeedViewset)
 
 urlpatterns = [
