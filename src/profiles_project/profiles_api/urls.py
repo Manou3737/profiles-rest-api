@@ -14,6 +14,41 @@ router.register(
     views.LoginViewSet,
     basename='login'
 )
+router.register(
+    'logout',
+    views.LogoutViewSet,
+    basename='logout'
+)
+router.register(
+    'password-change',
+    views.PasswordChangeViewSet,
+    basename='password-change'
+)
+
+router.register(
+    'password-reset',
+    views.PasswordResetRequestViewSet,
+    basename='password-reset'
+)
+
+router.register(
+    'password-reset-confirm',
+    views.PasswordResetConfirmViewSet,
+    basename='password-reset-confirm'
+)
+
+router.register(
+    'register',
+    views.RegisterViewSet,
+    basename='register'
+)
+
+router.register(
+    'verify-email',
+    views.EmailVerificationViewSet,
+    basename='verify-email'
+)
+
 router.register('feed', views.UserProfileFeedViewset)
 
 urlpatterns = [
