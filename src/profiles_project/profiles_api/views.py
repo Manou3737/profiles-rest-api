@@ -123,7 +123,7 @@ class HelloViewSet(viewsets.ViewSet):
 class UserProfileViewset(viewsets.ModelViewSet):
     """Handles creating and updating profiles"""
 
-    serializer_class = serializers.UserProfileSerializer
+    serializer_class = serializers.UserProfileUpdateSerializer
     queryset = models.UserProfile.objects.all()
     authentication_classes = (JWTAuthentication,)
     permission_classes = (permissions.UpdateOwnProfile,)

@@ -163,3 +163,20 @@ class PasswordResetConfirmSerializer(serializers.Serializer):
             })
 
         return attrs
+
+class UserProfileUpdateSerializer(serializers.ModelSerializer):
+    """Serializer for updating a user profile."""
+
+    class Meta:
+        model = models.UserProfile
+        fields = (
+            'id',
+            'email',
+            'name',
+            'email_verified',
+        )
+        read_only_fields = (
+            'id',
+            'email',
+            'email_verified',
+        )
