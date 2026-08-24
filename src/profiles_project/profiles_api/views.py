@@ -7,7 +7,7 @@ from rest_framework import status
 
 from rest_framework_simplejwt.authentication import JWTAuthentication
 from rest_framework import filters
-
+from rest_framework.decorators import action
 
 from rest_framework_simplejwt.tokens import RefreshToken, TokenError
 from rest_framework.permissions import IsAuthenticatedOrReadOnly
@@ -121,14 +121,38 @@ class HelloViewSet(viewsets.ViewSet):
         return Response({'http_method': 'DELETE'})
 
 class UserProfileViewset(viewsets.ModelViewSet):
-    """Handles creating and updating profiles"""
+    """Handles creating and updating profiles."""
 
-    serializer_class = serializers.UserProfileUpdateSerializer
+    def get_serializer_class(self):
+        """Return appropriate serializer based on the action."""
+
+        if self.action == 'create':
+            return serializers.UserProfileSerializer
+
+        return serializers.UserProfileUpdateSerializer
+
+    @action(
+        detail=False,
+        methods=['get'],
+        url_path='admin-users',
+        permission_classes=(permissions.IsAdmin,),
+    )
+    def admin_users(self, request):
+        """Return all users for administrators."""
+
+        queryset = self.get_queryset()
+        serializer = serializers.UserProfileUpdateSerializer(
+            queryset,
+            many=True,
+        )
+
+        return Response(serializer.data)
+
     queryset = models.UserProfile.objects.all()
     authentication_classes = (JWTAuthentication,)
     permission_classes = (permissions.UpdateOwnProfile,)
     filter_backends = (filters.SearchFilter,)
-    search_fields =('name', 'email',)
+    search_fields = ('name', 'email',)
 
 class RegisterViewSet(viewsets.ViewSet):
     """Handles user registration."""
