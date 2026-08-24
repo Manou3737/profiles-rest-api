@@ -18,6 +18,7 @@ from django.utils.http import urlsafe_base64_decode
 from django.utils.encoding import force_str
 from django.utils.http import urlsafe_base64_encode
 from django.utils.encoding import force_bytes
+from django_filters.rest_framework import DjangoFilterBackend
 
 from . import serializers
 from . import models
@@ -151,8 +152,16 @@ class UserProfileViewset(viewsets.ModelViewSet):
     queryset = models.UserProfile.objects.all()
     authentication_classes = (JWTAuthentication,)
     permission_classes = (permissions.UpdateOwnProfile,)
-    filter_backends = (filters.SearchFilter,)
-    search_fields = ('name', 'email',)
+
+    filter_backends = (
+        filters.SearchFilter,
+        filters.OrderingFilter,
+        DjangoFilterBackend,
+    )
+    search_fields = ('name', 'email')
+    filterset_fields = ('is_active',)
+    ordering_fields = ('name', 'email', 'id')
+    ordering = ('id',)
 
 class RegisterViewSet(viewsets.ViewSet):
     """Handles user registration."""
