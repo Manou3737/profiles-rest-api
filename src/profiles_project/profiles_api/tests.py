@@ -744,6 +744,42 @@ class PasswordChangeTests(TestCase):
 
         self.assertEqual(response.status_code, 400)
 
+    def test_change_password_creates_audit_and_security_event(self):
+        """Test that a successful password change creates audit records."""
+
+        payload = {
+            'old_password': 'OldPassword123!',
+            'new_password': 'NewPassword123!',
+            'new_password_confirm': 'NewPassword123!',
+        }
+
+        response = self.client.post(
+            '/api/password-change/',
+            payload,
+        )
+
+        self.assertEqual(response.status_code, 200)
+
+        audit_log = models.AuditLog.objects.get(
+            user=self.user,
+            action='PASSWORD_CHANGE',
+        )
+
+        security_event = models.SecurityEvent.objects.get(
+            user=self.user,
+            event_type='PASSWORD_CHANGED',
+        )
+
+        self.assertEqual(
+            audit_log.details,
+            'User changed their password.',
+        )
+
+        self.assertEqual(
+            security_event.details,
+            'User changed their password.',
+        )
+
 class PasswordResetTests(TestCase):
     """Tests for password reset confirmation."""
 
@@ -849,3 +885,230 @@ class PasswordResetTests(TestCase):
         )
 
         self.assertEqual(response.status_code, 400)
+
+class LoginAuditTests(TestCase):
+    """Tests audit logging for successful and failed logins."""
+
+    def setUp(self):
+        self.client = APIClient()
+
+        self.user = models.UserProfile.objects.create_user(
+            email='auditlogin@example.com',
+            name='Audit Login User',
+            password='LoginPassword123!',
+        )
+
+    def test_successful_login_creates_audit_and_security_event(self):
+        """Test that a successful login creates audit records."""
+
+        response = self.client.post(
+            '/api/login/',
+            {
+                'email': 'auditlogin@example.com',
+                'password': 'LoginPassword123!',
+            },
+        )
+
+        self.assertEqual(response.status_code, 200)
+
+        audit_log = models.AuditLog.objects.get(
+            user=self.user,
+            action='LOGIN',
+        )
+
+        security_event = models.SecurityEvent.objects.get(
+            user=self.user,
+            event_type='LOGIN_SUCCESS',
+        )
+
+        self.assertEqual(
+            audit_log.details,
+            'User logged in successfully.',
+        )
+        self.assertEqual(
+            security_event.details,
+            'User logged in successfully.',
+        )
+
+    def test_failed_login_creates_security_events(self):
+        """Test that a failed login creates audit and security events."""
+
+        response = self.client.post(
+            '/api/login/',
+            {
+                'email': self.user.email,
+                'password': 'WrongPassword123!',
+            },
+        )
+
+        self.assertEqual(response.status_code, 400)
+
+        audit_log = models.AuditLog.objects.filter(
+            action='LOGIN_FAILED'
+        ).first()
+
+        security_event = models.SecurityEvent.objects.filter(
+            event_type='LOGIN_FAILED'
+        ).first()
+
+        self.assertIsNotNone(audit_log)
+        self.assertIsNotNone(security_event)
+
+        self.assertIsNone(audit_log.user)
+        self.assertIsNone(security_event.user)
+
+        self.assertEqual(
+            audit_log.details,
+            'Failed login attempt.',
+        )
+
+        self.assertEqual(
+            security_event.details,
+            'Failed login attempt.',
+        )
+
+class AccountStatusAuditTests(TestCase):
+    """Tests audit logging for account activation and deactivation."""
+
+    def setUp(self):
+        self.client = APIClient()
+
+        self.user = models.UserProfile.objects.create_user(
+            email='accountaudit@example.com',
+            name='Account Audit User',
+            password='AccountPassword123!',
+        )
+
+        self.staff_user = models.UserProfile.objects.create_user(
+            email='staffaudit@example.com',
+            name='Staff Audit User',
+            password='StaffPassword123!',
+        )
+
+        self.staff_user.is_staff = True
+        self.staff_user.save(update_fields=['is_staff'])
+
+        self.client.force_authenticate(user=self.staff_user)
+
+    def test_activate_account_creates_audit_and_security_event(self):
+        """Test that activating an account creates audit records."""
+
+        self.user.is_active = False
+        self.user.save(update_fields=['is_active'])
+
+        response = self.client.patch(
+            f'/api/account-status/{self.user.id}/',
+            {'is_active': True},
+            format='json',
+        )
+
+        self.assertEqual(response.status_code, 200)
+
+        audit_log = models.AuditLog.objects.get(
+            user=self.user,
+            action='ACCOUNT_ACTIVATED',
+        )
+
+        security_event = models.SecurityEvent.objects.get(
+            user=self.user,
+            event_type='ACCOUNT_ACTIVATED',
+        )
+
+        self.assertEqual(
+            audit_log.details,
+            'User account was activated.',
+        )
+
+        self.assertEqual(
+            security_event.details,
+            'User account was activated.',
+        )
+
+    def test_deactivate_account_creates_audit_and_security_event(self):
+        """Test that deactivating an account creates audit records."""
+
+        response = self.client.patch(
+            f'/api/account-status/{self.user.id}/',
+            {'is_active': False},
+            format='json',
+        )
+
+        self.assertEqual(response.status_code, 200)
+
+        audit_log = models.AuditLog.objects.get(
+            user=self.user,
+            action='ACCOUNT_DEACTIVATED',
+        )
+
+        security_event = models.SecurityEvent.objects.get(
+            user=self.user,
+            event_type='ACCOUNT_DEACTIVATED',
+        )
+
+        self.assertEqual(
+            audit_log.details,
+            'User account was deactivated.',
+        )
+
+        self.assertEqual(
+            security_event.details,
+            'User account was deactivated.',
+        )
+
+class UnauthorizedAccessAuditTests(TestCase):
+    """Tests audit logging for unauthorized access attempts."""
+
+    def setUp(self):
+        self.client = APIClient()
+
+        self.user1 = models.UserProfile.objects.create_user(
+            email='unauthorized1@example.com',
+            name='Unauthorized User One',
+            password='Password123!',
+        )
+
+        self.user2 = models.UserProfile.objects.create_user(
+            email='unauthorized2@example.com',
+            name='Unauthorized User Two',
+            password='Password123!',
+        )
+
+        self.client.force_authenticate(user=self.user1)
+
+    def test_unauthorized_profile_update_creates_security_event(self):
+        """Test that unauthorized profile access is logged."""
+
+        response = self.client.patch(
+            f'/api/profile/{self.user2.id}/',
+            {'name': 'Unauthorized Update'},
+            format='json',
+        )
+
+        self.assertEqual(response.status_code, 403)
+
+        audit_log = models.AuditLog.objects.get(
+            user=self.user1,
+            action='UNAUTHORIZED_ACCESS',
+        )
+
+        security_event = models.SecurityEvent.objects.get(
+            user=self.user1,
+            event_type='UNAUTHORIZED_ACCESS',
+        )
+
+        self.assertIn(
+            f'/api/profile/{self.user2.id}/',
+            audit_log.details,
+        )
+
+        self.assertIn(
+            f'/api/profile/{self.user2.id}/',
+            security_event.details,
+        )
+
+        self.user2.refresh_from_db()
+
+        self.assertEqual(
+            self.user2.name,
+            'Unauthorized User Two',
+        )

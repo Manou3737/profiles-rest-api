@@ -8,6 +8,7 @@ from rest_framework import status
 from rest_framework_simplejwt.authentication import JWTAuthentication
 from rest_framework import filters
 from rest_framework.decorators import action
+from rest_framework.exceptions import ValidationError
 
 from rest_framework_simplejwt.tokens import RefreshToken, TokenError
 from rest_framework.permissions import IsAuthenticatedOrReadOnly
@@ -272,11 +273,36 @@ class LoginViewSet(viewsets.ViewSet):
             context={'request': request}
         )
 
-        serializer.is_valid(raise_exception=True)
+        try:
+            serializer.is_valid(raise_exception=True)
+        except ValidationError:
+            models.AuditLog.objects.create(
+                action='LOGIN_FAILED',
+                details='Failed login attempt.',
+            )
+
+            models.SecurityEvent.objects.create(
+                event_type='LOGIN_FAILED',
+                details='Failed login attempt.',
+            )
+
+            raise
 
         user = serializer.validated_data['user']
 
         refresh = RefreshToken.for_user(user)
+
+        models.AuditLog.objects.create(
+            user=user,
+            action='LOGIN',
+            details='User logged in successfully.',
+        )
+
+        models.SecurityEvent.objects.create(
+            user=user,
+            event_type='LOGIN_SUCCESS',
+            details='User logged in successfully.',
+        )
 
         return Response({
             'refresh': str(refresh),
@@ -333,6 +359,17 @@ class PasswordChangeViewSet(viewsets.ViewSet):
         user.set_password(serializer.validated_data['new_password'])
         user.save()
 
+        models.AuditLog.objects.create(
+            user=user,
+            action='PASSWORD_CHANGE',
+            details='User changed their password.',
+        )
+
+        models.SecurityEvent.objects.create(
+            user=user,
+            event_type='PASSWORD_CHANGED',
+            details='User changed their password.',
+        )
         return Response(
             {'detail': 'Password changed successfully.'},
             status=status.HTTP_200_OK,
@@ -429,12 +466,35 @@ class AccountStatusViewSet(viewsets.ViewSet):
                 {'detail': 'User not found.'},
                 status=status.HTTP_404_NOT_FOUND,
             )
+
         self.check_object_permissions(request, user)
+
         serializer = self.serializer_class(data=request.data)
         serializer.is_valid(raise_exception=True)
 
         user.is_active = serializer.validated_data['is_active']
         user.save(update_fields=['is_active'])
+
+        if user.is_active:
+            action = 'ACCOUNT_ACTIVATED'
+            event_type = 'ACCOUNT_ACTIVATED'
+            details = 'User account was activated.'
+        else:
+            action = 'ACCOUNT_DEACTIVATED'
+            event_type = 'ACCOUNT_DEACTIVATED'
+            details = 'User account was deactivated.'
+
+        models.AuditLog.objects.create(
+            user=user,
+            action=action,
+            details=details,
+        )
+
+        models.SecurityEvent.objects.create(
+            user=user,
+            event_type=event_type,
+            details=details,
+        )
 
         return Response(
             {

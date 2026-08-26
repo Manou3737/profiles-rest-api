@@ -153,6 +153,9 @@ REST_FRAMEWORK = {
         'user': '1000/day',
         'login': '5/minute',
     },
+    'EXCEPTION_HANDLER': (
+        'profiles_api.exception_handler.audit_exception_handler'
+    ),
 }
 
 EMAIL_BACKEND = 'django.core.mail.backends.console.EmailBackend'
