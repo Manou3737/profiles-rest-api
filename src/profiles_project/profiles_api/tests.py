@@ -655,3 +655,197 @@ class FeedObjectPermissionTests(TestCase):
             response.data['status_text'],
             'Updated by Admin',
         )
+
+class PasswordChangeTests(TestCase):
+    """Tests for changing the authenticated user's password."""
+
+    def setUp(self):
+        self.client = APIClient()
+
+        self.user = models.UserProfile.objects.create_user(
+            email='passwordchange@example.com',
+            name='Password Change User',
+            password='OldPassword123!',
+        )
+
+        self.client.force_authenticate(user=self.user)
+
+    def test_change_password_success(self):
+        """Test changing the password with a valid new password."""
+
+        payload = {
+            'old_password': 'OldPassword123!',
+            'new_password': 'NewPassword123!',
+            'new_password_confirm': 'NewPassword123!',
+        }
+
+        response = self.client.post('/api/password-change/', payload)
+
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(
+            response.data['detail'],
+            'Password changed successfully.'
+        )
+
+        self.user.refresh_from_db()
+
+        self.assertTrue(
+            self.user.check_password('NewPassword123!')
+        )
+        self.assertFalse(
+            self.user.check_password('OldPassword123!')
+        )
+
+    def test_change_password_rejects_weak_password(self):
+        """Test that a weak new password is rejected."""
+
+        payload = {
+            'old_password': 'OldPassword123!',
+            'new_password': '123',
+            'new_password_confirm': '123',
+        }
+
+        response = self.client.post('/api/password-change/', payload)
+
+        self.assertEqual(response.status_code, 400)
+
+        self.user.refresh_from_db()
+
+        self.assertTrue(
+            self.user.check_password('OldPassword123!')
+        )
+        self.assertFalse(
+            self.user.check_password('123')
+        )
+
+    def test_change_password_rejects_mismatched_passwords(self):
+        """Test that mismatched new passwords are rejected."""
+
+        payload = {
+            'old_password': 'OldPassword123!',
+            'new_password': 'NewPassword123!',
+            'new_password_confirm': 'DifferentPassword123!',
+        }
+
+        response = self.client.post('/api/password-change/', payload)
+
+        self.assertEqual(response.status_code, 400)
+
+    def test_change_password_rejects_incorrect_old_password(self):
+        """Test that an incorrect old password is rejected."""
+
+        payload = {
+            'old_password': 'WrongPassword123!',
+            'new_password': 'NewPassword123!',
+            'new_password_confirm': 'NewPassword123!',
+        }
+
+        response = self.client.post('/api/password-change/', payload)
+
+        self.assertEqual(response.status_code, 400)
+
+class PasswordResetTests(TestCase):
+    """Tests for password reset confirmation."""
+
+    def setUp(self):
+        self.client = APIClient()
+
+        self.user = models.UserProfile.objects.create_user(
+            email='passwordreset@example.com',
+            name='Password Reset User',
+            password='OldPassword123!',
+        )
+
+    def test_password_reset_confirm_success(self):
+        """Test resetting the password with a valid new password."""
+
+        response = self.client.post(
+            '/api/password-reset/',
+            {'email': self.user.email},
+        )
+
+        self.assertEqual(response.status_code, 200)
+
+        payload = {
+            'uid': response.data['uid'],
+            'token': response.data['token'],
+            'new_password': 'NewPassword123!',
+            'new_password_confirm': 'NewPassword123!',
+        }
+
+        response = self.client.post(
+            '/api/password-reset-confirm/',
+            payload,
+        )
+
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(
+            response.data['detail'],
+            'Password has been reset successfully.'
+        )
+
+        self.user.refresh_from_db()
+
+        self.assertTrue(
+            self.user.check_password('NewPassword123!')
+        )
+        self.assertFalse(
+            self.user.check_password('OldPassword123!')
+        )
+
+    def test_password_reset_confirm_rejects_weak_password(self):
+        """Test that a weak password is rejected."""
+
+        response = self.client.post(
+            '/api/password-reset/',
+            {'email': self.user.email},
+        )
+
+        self.assertEqual(response.status_code, 200)
+
+        payload = {
+            'uid': response.data['uid'],
+            'token': response.data['token'],
+            'new_password': '123',
+            'new_password_confirm': '123',
+        }
+
+        response = self.client.post(
+            '/api/password-reset-confirm/',
+            payload,
+        )
+
+        self.assertEqual(response.status_code, 400)
+
+        self.user.refresh_from_db()
+
+        self.assertTrue(
+            self.user.check_password('OldPassword123!')
+        )
+        self.assertFalse(
+            self.user.check_password('123')
+        )
+
+    def test_password_reset_confirm_rejects_mismatched_passwords(self):
+        """Test that mismatched passwords are rejected."""
+
+        response = self.client.post(
+            '/api/password-reset/',
+            {'email': self.user.email},
+        )
+
+        self.assertEqual(response.status_code, 200)
+
+        payload = {
+            'uid': response.data['uid'],
+            'token': response.data['token'],
+            'new_password': 'NewPassword123!',
+            'new_password_confirm': 'DifferentPassword123!',
+        }
+
+        response = self.client.post(
+            '/api/password-reset-confirm/',
+            payload,
+        )
+
+        self.assertEqual(response.status_code, 400)

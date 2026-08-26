@@ -373,11 +373,8 @@ class PasswordResetConfirmViewSet(viewsets.ViewSet):
     def create(self, request):
         """Set a new password using the reset token."""
 
-        serializer = self.serializer_class(data=request.data)
-        serializer.is_valid(raise_exception=True)
-
-        uid = serializer.validated_data['uid']
-        token = serializer.validated_data['token']
+        uid = request.data.get('uid')
+        token = request.data.get('token')
 
         try:
             user_id = force_str(urlsafe_base64_decode(uid))
@@ -394,6 +391,12 @@ class PasswordResetConfirmViewSet(viewsets.ViewSet):
                 {'detail': 'Invalid or expired password reset token.'},
                 status=status.HTTP_400_BAD_REQUEST,
             )
+
+        serializer = self.serializer_class(
+            data=request.data,
+            context={'user': user},
+        )
+        serializer.is_valid(raise_exception=True)
 
         user.set_password(serializer.validated_data['new_password'])
         user.save()

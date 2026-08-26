@@ -1,5 +1,7 @@
 from rest_framework import serializers
 from django.contrib.auth import authenticate
+from django.contrib.auth.password_validation import validate_password
+from django.core.exceptions import ValidationError
 from . import models
 
 
@@ -7,7 +9,6 @@ class HelloSerializer(serializers.Serializer):
     """Serializes a name field for testing our APIView."""
 
     name = serializers.CharField(max_length=10)
-
 
 class UserProfileSerializer(serializers.ModelSerializer):
     """A serializer for our user profile objects."""
@@ -30,11 +31,18 @@ class UserProfileSerializer(serializers.ModelSerializer):
         }
 
     def validate(self, attrs):
-        """Check that both passwords match."""
+        """Validate password confirmation and password strength."""
 
         if attrs['password'] != attrs['password_confirm']:
             raise serializers.ValidationError({
                 'password_confirm': 'Passwords do not match.'
+            })
+
+        try:
+            validate_password(attrs['password'])
+        except ValidationError as exc:
+            raise serializers.ValidationError({
+                'password': exc.messages
             })
 
         return attrs
@@ -51,7 +59,6 @@ class UserProfileSerializer(serializers.ModelSerializer):
         )
 
         return user
-
 
 class ProfileFeedItemSerializer(serializers.ModelSerializer):
     """A serializer for profile feed items."""
@@ -98,7 +105,8 @@ class AuthTokenSerializer(serializers.Serializer):
         return attrs
 
 class PasswordChangeSerializer(serializers.Serializer):
-    """Serializes password change requests."""
+    """Validate the old password, new password confirmation,
+and password strength policy."""
 
     old_password = serializers.CharField(
         write_only=True,
@@ -131,12 +139,13 @@ class PasswordChangeSerializer(serializers.Serializer):
                 'new_password_confirm': 'Passwords do not match.'
             })
 
+        validate_password(attrs['new_password'], user=user)
+
         return attrs
 class PasswordResetRequestSerializer(serializers.Serializer):
     """Serializes password reset requests."""
 
     email = serializers.EmailField()
-
 
 class PasswordResetConfirmSerializer(serializers.Serializer):
     """Serializes password reset confirmation."""
@@ -155,12 +164,17 @@ class PasswordResetConfirmSerializer(serializers.Serializer):
     token = serializers.CharField()
 
     def validate(self, attrs):
-        """Check that both new passwords match."""
+        """Check password confirmation and password strength."""
 
         if attrs['new_password'] != attrs['new_password_confirm']:
             raise serializers.ValidationError({
                 'new_password_confirm': 'Passwords do not match.'
             })
+
+        user = self.context.get('user')
+
+        if user is not None:
+            validate_password(attrs['new_password'], user=user)
 
         return attrs
 
