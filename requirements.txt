@@ -4,3 +4,4 @@ pytz==2026.3.post1
 gunicorn==26.0.0
 djangorestframework-simplejwt==5.5.1
 django-filter==26.1
+psycopg[binary]==3.3.4

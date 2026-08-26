@@ -13,7 +13,10 @@ from rest_framework_simplejwt.tokens import RefreshToken, TokenError
 from rest_framework.permissions import IsAuthenticatedOrReadOnly
 from rest_framework.permissions import IsAuthenticated
 
+from rest_framework.throttling import AnonRateThrottle
+
 from django.contrib.auth.tokens import default_token_generator
+from django.contrib.auth.password_validation import validate_password
 from django.utils.http import urlsafe_base64_decode
 from django.utils.encoding import force_str
 from django.utils.http import urlsafe_base64_encode
@@ -252,11 +255,14 @@ class EmailVerificationViewSet(viewsets.ViewSet):
             status=status.HTTP_200_OK,
         )
 
+class LoginRateThrottle(AnonRateThrottle):
+    scope = 'login'
 
 class LoginViewSet(viewsets.ViewSet):
     """Checks email and password and returns JWT tokens."""
 
     serializer_class = serializers.AuthTokenSerializer
+    throttle_classes = (LoginRateThrottle,)
 
     def create(self, request):
         """Validate credentials and return JWT token."""
