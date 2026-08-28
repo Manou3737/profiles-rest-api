@@ -41,6 +41,7 @@ INSTALLED_APPS = [
     'django.contrib.messages',
     'django.contrib.staticfiles',
     'rest_framework',
+    'drf_spectacular',
     'django_filters',
     'rest_framework_simplejwt.token_blacklist',
     'rest_framework.authtoken',
@@ -137,6 +138,7 @@ REST_FRAMEWORK = {
     'DEFAULT_AUTHENTICATION_CLASSES': (
         'rest_framework_simplejwt.authentication.JWTAuthentication',
     ),
+    'DEFAULT_SCHEMA_CLASS': 'drf_spectacular.openapi.AutoSchema',
     'DEFAULT_PAGINATION_CLASS': (
         'rest_framework.pagination.PageNumberPagination'
     ),
@@ -156,6 +158,32 @@ REST_FRAMEWORK = {
     'EXCEPTION_HANDLER': (
         'profiles_api.exception_handler.audit_exception_handler'
     ),
+}
+
+SPECTACULAR_SETTINGS = {
+    'TITLE': 'Profiles REST API',
+    'DESCRIPTION': (
+        'REST API for user profiles, authentication, '
+        'permissions and security events.'
+    ),
+    'VERSION': '1.0.0',
+    'SERVE_INCLUDE_SCHEMA': False,
+
+    'SECURITY': [
+        {
+            'BearerAuth': [],
+        },
+    ],
+
+    'COMPONENTS': {
+        'securitySchemes': {
+            'BearerAuth': {
+                'type': 'http',
+                'scheme': 'bearer',
+                'bearerFormat': 'JWT',
+            },
+        },
+    },
 }
 
 EMAIL_BACKEND = 'django.core.mail.backends.console.EmailBackend'

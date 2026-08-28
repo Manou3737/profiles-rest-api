@@ -1,5 +1,3 @@
-from django.shortcuts import render
-
 from rest_framework.views import APIView
 from rest_framework.response import Response
 from rest_framework import viewsets
@@ -23,7 +21,13 @@ from django.utils.encoding import force_str
 from django.utils.http import urlsafe_base64_encode
 from django.utils.encoding import force_bytes
 from django_filters.rest_framework import DjangoFilterBackend
+from django.shortcuts import render
 
+from drf_spectacular.utils import (
+    OpenApiParameter,
+    OpenApiResponse,
+    extend_schema,
+)
 from . import serializers
 from . import models
 from . import permissions
@@ -86,14 +90,14 @@ class HelloViewSet(viewsets.ViewSet):
         """Return a hello message."""
 
         a_viewset = [
-        'Uses actions(list, create, retrieve, update, partial_update)',
-        'Automatically maps to URLs using Routers',
-        'Provides more functionality with less code.'
+            'Uses actions(list, create, retrieve, update, partial_update)',
+            'Automatically maps to URLs using Routers',
+            'Provides more functionality with less code.'
         ]
 
         return Response({
-        'message': 'Hello',
-        'a_viewset': a_viewset
+            'message': 'Hello',
+            'a_viewset': a_viewset
         })
 
     def create(self, request):
@@ -107,20 +111,62 @@ class HelloViewSet(viewsets.ViewSet):
 
         else:
             return Response(
-                serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+                serializer.errors,
+                status=status.HTTP_400_BAD_REQUEST
+            )
 
+    @extend_schema(
+        parameters=[
+            OpenApiParameter(
+                name='id',
+                type=int,
+                location=OpenApiParameter.PATH,
+                description='Object ID.',
+            ),
+        ],
+    )
     def retrieve(self, request, pk=None):
         """Handles getting an object by its ID."""
         return Response({'http_method': 'Get'})
 
-    def update(self, request,pk=None):
+    @extend_schema(
+        parameters=[
+            OpenApiParameter(
+                name='id',
+                type=int,
+                location=OpenApiParameter.PATH,
+                description='Object ID.',
+            ),
+        ],
+    )
+    def update(self, request, pk=None):
         """Handles updating an object."""
         return Response({'http_method': 'PUT'})
 
-    def partial_update(self, request,pk=None):
+    @extend_schema(
+        parameters=[
+            OpenApiParameter(
+                name='id',
+                type=int,
+                location=OpenApiParameter.PATH,
+                description='Object ID.',
+            ),
+        ],
+    )
+    def partial_update(self, request, pk=None):
         """Handles updating part of an object."""
         return Response({'http_method': 'PATCH'})
 
+    @extend_schema(
+        parameters=[
+            OpenApiParameter(
+                name='id',
+                type=int,
+                location=OpenApiParameter.PATH,
+                description='Object ID.',
+            ),
+        ],
+    )
     def destroy(self, request, pk=None):
         """Handles removing an object."""
         return Response({'http_method': 'DELETE'})
@@ -171,7 +217,22 @@ class RegisterViewSet(viewsets.ViewSet):
     """Handles user registration."""
 
     serializer_class = serializers.UserProfileSerializer
-
+    @extend_schema(
+        summary='Register user',
+        description=(
+            'Creates a new user account and sends an email verification '
+            'link to the registered email address.'
+        ),
+        request=serializers.UserProfileSerializer,
+        responses={
+            201: OpenApiResponse(
+                description='User account created successfully.',
+            ),
+            400: OpenApiResponse(
+                description='Invalid registration data.',
+            ),
+        },
+    )
     def create(self, request):
         """Create a new user account and send verification email."""
 
@@ -213,7 +274,37 @@ class RegisterViewSet(viewsets.ViewSet):
 
 class EmailVerificationViewSet(viewsets.ViewSet):
     """Handles email verification."""
-
+    @extend_schema(
+        summary='Verify email address',
+        description=(
+            'Verifies a user email address using the UID and '
+            'verification token received by email.'
+        ),
+        parameters=[
+            OpenApiParameter(
+                name='uid',
+                type=str,
+                location=OpenApiParameter.QUERY,
+                required=True,
+                description='Base64-encoded user ID.',
+            ),
+            OpenApiParameter(
+                name='token',
+                type=str,
+                location=OpenApiParameter.QUERY,
+                required=True,
+                description='Email verification token.',
+            ),
+        ],
+        responses={
+            200: OpenApiResponse(
+                description='Email address verified successfully.',
+            ),
+            400: OpenApiResponse(
+                description='Invalid or expired verification request.',
+            ),
+        },
+    )
     def list(self, request):
         """Verify a user's email address."""
 
@@ -264,7 +355,25 @@ class LoginViewSet(viewsets.ViewSet):
 
     serializer_class = serializers.AuthTokenSerializer
     throttle_classes = (LoginRateThrottle,)
-
+    @extend_schema(
+        summary='Login',
+        description=(
+            'Authenticates a user with email and password and returns '
+            'a JWT access token and refresh token.'
+        ),
+        request=serializers.AuthTokenSerializer,
+        responses={
+            200: OpenApiResponse(
+                description='Authentication successful. Returns JWT tokens.',
+            ),
+            400: OpenApiResponse(
+                description='Invalid credentials or invalid request data.',
+            ),
+            429: OpenApiResponse(
+                description='Too many login attempts.',
+            ),
+        },
+    )
     def create(self, request):
         """Validate credentials and return JWT token."""
 
@@ -312,6 +421,32 @@ class LoginViewSet(viewsets.ViewSet):
 class LogoutViewSet(viewsets.ViewSet):
     """Handles user logout by blacklisting the refresh token."""
 
+    @extend_schema(
+        summary='Logout',
+        description=(
+            'Blacklists the supplied refresh token and logs the user out.'
+        ),
+        request={
+            'application/json': {
+                'type': 'object',
+                'properties': {
+                    'refresh': {
+                        'type': 'string',
+                        'description': 'JWT refresh token.',
+                    },
+                },
+                'required': ['refresh'],
+            },
+        },
+        responses={
+            205: OpenApiResponse(
+                description='Successfully logged out.',
+            ),
+            400: OpenApiResponse(
+                description='Refresh token is missing, invalid, or expired.',
+            ),
+        },
+    )
     def create(self, request):
         """Blacklist the refresh token."""
 
@@ -344,7 +479,26 @@ class PasswordChangeViewSet(viewsets.ViewSet):
     authentication_classes = (JWTAuthentication,)
     permission_classes = (IsAuthenticated,)
     serializer_class = serializers.PasswordChangeSerializer
-
+    @extend_schema(
+        summary='Change password',
+        description=(
+            'Changes the password of the currently authenticated user. '
+            'Authentication with a valid JWT access token is required.'
+        ),
+        request=serializers.PasswordChangeSerializer,
+        responses={
+            200: OpenApiResponse(
+                description='Password changed successfully.',
+            ),
+            400: OpenApiResponse(
+                description='Invalid password data.',
+            ),
+            401: OpenApiResponse(
+                description='Authentication credentials were not provided '
+                'or are invalid.',
+            ),
+        },
+    )
     def create(self, request):
         """Change the authenticated user's password."""
 
@@ -380,6 +534,28 @@ class PasswordResetRequestViewSet(viewsets.ViewSet):
 
     serializer_class = serializers.PasswordResetRequestSerializer
 
+    @extend_schema(
+        summary='Request password reset',
+        description=(
+            'Generates a password reset token for the user associated '
+            'with the supplied email address.'
+        ),
+        request=serializers.PasswordResetRequestSerializer,
+        responses={
+            200: OpenApiResponse(
+                description=(
+                    'Password reset token generated successfully. '
+                    'Returns the UID and reset token.'
+                ),
+            ),
+            400: OpenApiResponse(
+                description='Invalid email address or request data.',
+            ),
+            404: OpenApiResponse(
+                description='No user found with this email address.',
+            ),
+        },
+    )
     def create(self, request):
         """Generate a password reset token for the user."""
 
@@ -407,12 +583,30 @@ class PasswordResetRequestViewSet(viewsets.ViewSet):
             status=status.HTTP_200_OK,
         )
 
-
 class PasswordResetConfirmViewSet(viewsets.ViewSet):
     """Handles password reset confirmation."""
 
     serializer_class = serializers.PasswordResetConfirmSerializer
 
+    @extend_schema(
+        summary='Confirm password reset',
+        description=(
+            'Sets a new password using the UID and password reset token '
+            'provided in the request.'
+        ),
+        request=serializers.PasswordResetConfirmSerializer,
+        responses={
+            200: OpenApiResponse(
+                description='Password has been reset successfully.',
+            ),
+            400: OpenApiResponse(
+                description=(
+                    'Invalid or expired password reset token, '
+                    'invalid reset link, or invalid password data.'
+                ),
+            ),
+        },
+    )
     def create(self, request):
         """Set a new password using the reset token."""
 
@@ -422,8 +616,12 @@ class PasswordResetConfirmViewSet(viewsets.ViewSet):
         try:
             user_id = force_str(urlsafe_base64_decode(uid))
             user = models.UserProfile.objects.get(pk=user_id)
-        except (TypeError, ValueError, OverflowError,
-                models.UserProfile.DoesNotExist):
+        except (
+            TypeError,
+            ValueError,
+            OverflowError,
+            models.UserProfile.DoesNotExist,
+        ):
             return Response(
                 {'detail': 'Invalid password reset link.'},
                 status=status.HTTP_400_BAD_REQUEST,
@@ -456,6 +654,16 @@ class AccountStatusViewSet(viewsets.ViewSet):
     permission_classes = (permissions.IsStaffOrOwnDeactivation,)
     serializer_class = serializers.AccountStatusSerializer
 
+    @extend_schema(
+        parameters=[
+            OpenApiParameter(
+                name='id',
+                type=int,
+                location=OpenApiParameter.PATH,
+                description='Object ID.',
+            ),
+        ],
+    )
     def partial_update(self, request, pk=None):
         """Activate or deactivate a user account."""
 
