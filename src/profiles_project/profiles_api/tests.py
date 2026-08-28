@@ -1,8 +1,261 @@
-from django.test import TestCase
 from rest_framework.test import APIClient
+from rest_framework_simplejwt.tokens import RefreshToken, TokenError
+
+from django.contrib.auth.tokens import default_token_generator
+from django.utils.http import urlsafe_base64_encode
+from django.utils.encoding import force_bytes
+from django.test import TestCase
+from django.core import mail
 
 from . import models
 from . import permissions
+
+class HelloViewSetTests(TestCase):
+    """Tests for HelloViewSet."""
+
+    def setUp(self):
+        self.client = APIClient()
+
+    def test_list_hello_viewset(self):
+        """Test GET list action."""
+
+        response = self.client.get('/api/hello-viewset/')
+
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.data['message'], 'Hello')
+        self.assertIn('a_viewset', response.data)
+
+    def test_create_hello_viewset_success(self):
+        """Test POST create action with valid data."""
+
+        response = self.client.post(
+            '/api/hello-viewset/',
+            {'name': 'Manoucheka'},
+        )
+
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(
+            response.data['message'],
+            'Hello Manoucheka',
+        )
+
+    def test_create_hello_viewset_invalid_data(self):
+        """Test POST create action with invalid data."""
+
+        response = self.client.post(
+            '/api/hello-viewset/',
+            {'name': ''},
+        )
+
+        self.assertEqual(response.status_code, 400)
+
+    def test_retrieve_hello_viewset(self):
+        """Test GET retrieve action."""
+
+        response = self.client.get('/api/hello-viewset/1/')
+
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.data['http_method'], 'Get')
+
+    def test_update_hello_viewset(self):
+        """Test PUT update action."""
+
+        response = self.client.put(
+            '/api/hello-viewset/1/',
+            {},
+        )
+
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.data['http_method'], 'PUT')
+
+    def test_partial_update_hello_viewset(self):
+        """Test PATCH partial update action."""
+
+        response = self.client.patch(
+            '/api/hello-viewset/1/',
+            {},
+        )
+
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.data['http_method'], 'PATCH')
+
+    def test_destroy_hello_viewset(self):
+        """Test DELETE destroy action."""
+
+        response = self.client.delete('/api/hello-viewset/1/')
+
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.data['http_method'], 'DELETE')
+
+class HelloApiViewTests(TestCase):
+    """Tests for HelloApiView."""
+
+    def setUp(self):
+        self.client = APIClient()
+
+    def test_get_hello_api_view(self):
+        """Test GET request to HelloApiView."""
+
+        response = self.client.get('/api/hello-view/')
+
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.data['message'], 'Hello')
+        self.assertIn('an_apiview', response.data)
+
+    def test_post_hello_api_view_success(self):
+        """Test POST request with a valid name."""
+
+        response = self.client.post(
+            '/api/hello-view/',
+            {'name': 'Manoucheka'},
+        )
+
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(
+            response.data['message'],
+            'Hello Manoucheka',
+        )
+
+    def test_post_hello_api_view_invalid_data(self):
+        """Test POST request with invalid data."""
+
+        response = self.client.post(
+            '/api/hello-view/',
+            {'name': ''},
+        )
+
+        self.assertEqual(response.status_code, 400)
+
+    def test_put_hello_api_view(self):
+        """Test PUT request to HelloApiView."""
+
+        response = self.client.put(
+            '/api/hello-view/',
+            {},
+        )
+
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.data['method'], 'put')
+
+    def test_patch_hello_api_view(self):
+        """Test PATCH request to HelloApiView."""
+
+        response = self.client.patch(
+            '/api/hello-view/',
+            {},
+        )
+
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.data['method'], 'patch')
+
+    def test_delete_hello_api_view(self):
+        """Test DELETE request to HelloApiView."""
+
+        response = self.client.delete('/api/hello-view/')
+
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.data['method'], 'delete')
+
+class RegisterViewSetTests(TestCase):
+    """Tests for user registration."""
+
+    def setUp(self):
+        self.client = APIClient()
+
+    def test_register_user_success(self):
+        """Test successful user registration."""
+
+        payload = {
+            'email': 'register@example.com',
+            'name': 'Registered User',
+            'password': 'RegisterPassword123!',
+            'password_confirm': 'RegisterPassword123!',
+        }
+
+        response = self.client.post(
+            '/api/register/',
+            payload,
+            format='json',
+        )
+
+        self.assertEqual(response.status_code, 201)
+
+        self.assertEqual(
+            response.data['email'],
+            payload['email'],
+        )
+
+        self.assertEqual(
+            response.data['name'],
+            payload['name'],
+        )
+
+        self.assertFalse(
+            response.data['email_verified']
+        )
+
+        user = models.UserProfile.objects.get(
+            email=payload['email']
+        )
+
+        self.assertTrue(
+            user.check_password(payload['password'])
+        )
+
+    def test_register_user_sends_verification_email(self):
+        """Test that registration sends a verification email."""
+
+        payload = {
+            'email': 'verification@example.com',
+            'name': 'Verification User',
+            'password': 'RegisterPassword123!',
+            'password_confirm': 'RegisterPassword123!',
+        }
+
+        response = self.client.post(
+            '/api/register/',
+            payload,
+            format='json',
+        )
+
+        self.assertEqual(response.status_code, 201)
+
+        self.assertEqual(len(mail.outbox), 1)
+
+        email = mail.outbox[0]
+
+        self.assertEqual(
+            email.to,
+            [payload['email']],
+        )
+
+        self.assertEqual(
+            email.subject,
+            'Verify your email address',
+        )
+
+        self.assertIn(
+            'Please verify your email address',
+            email.body,
+        )
+
+    def test_register_user_rejects_invalid_data(self):
+        """Test that invalid registration data is rejected."""
+
+        payload = {
+            'email': 'invalid-email',
+            'name': '',
+            'password': '123',
+            'password_confirm': '456',
+        }
+
+        response = self.client.post(
+            '/api/register/',
+            payload,
+            format='json',
+        )
+
+        self.assertEqual(response.status_code, 400)
 
 class UserProfileModelTests(TestCase):
     """Tests for the UserProfile model."""
@@ -91,6 +344,111 @@ class PublicUserApiTests(TestCase):
 
         self.assertEqual(response.status_code, 400)
 
+class EmailVerificationTests(TestCase):
+    """Tests for email verification."""
+
+    def setUp(self):
+        self.client = APIClient()
+
+        self.user = models.UserProfile.objects.create_user(
+            email='verify@example.com',
+            name='Verification User',
+            password='VerifyPassword123!',
+        )
+
+    def get_verification_data(self):
+        """Generate a valid UID and verification token."""
+
+        uid = urlsafe_base64_encode(
+            force_bytes(self.user.pk)
+        )
+        token = default_token_generator.make_token(self.user)
+
+        return uid, token
+
+    def test_email_verification_requires_uid_and_token(self):
+        """Test that UID and token are required."""
+
+        response = self.client.get(
+            '/api/verify-email/',
+        )
+
+        self.assertEqual(response.status_code, 400)
+        self.assertEqual(
+            response.data['detail'],
+            'UID and token are required.',
+        )
+
+    def test_email_verification_rejects_invalid_uid(self):
+        """Test that an invalid UID is rejected."""
+
+        uid = urlsafe_base64_encode(force_bytes(999999))
+
+        response = self.client.get(
+            f'/api/verify-email/?uid={uid}&token=invalid-token',
+        )
+
+        self.assertEqual(response.status_code, 400)
+        self.assertEqual(
+            response.data['detail'],
+            'Invalid email verification link.',
+        )
+
+    def test_email_verification_rejects_invalid_token(self):
+        """Test that an invalid verification token is rejected."""
+
+        uid, _ = self.get_verification_data()
+
+        response = self.client.get(
+            f'/api/verify-email/?uid={uid}&token=invalid-token',
+        )
+
+        self.assertEqual(response.status_code, 400)
+        self.assertEqual(
+            response.data['detail'],
+            'Invalid or expired email verification token.',
+        )
+
+        self.user.refresh_from_db()
+
+        self.assertFalse(self.user.email_verified)
+
+    def test_email_verification_success(self):
+        """Test that a valid token verifies the user's email."""
+
+        uid, token = self.get_verification_data()
+
+        response = self.client.get(
+            f'/api/verify-email/?uid={uid}&token={token}',
+        )
+
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(
+            response.data['detail'],
+            'Email address verified successfully.',
+        )
+
+        self.user.refresh_from_db()
+
+        self.assertTrue(self.user.email_verified)
+
+    def test_email_verification_rejects_already_verified_email(self):
+        """Test that an already verified email cannot be verified again."""
+
+        self.user.email_verified = True
+        self.user.save(update_fields=['email_verified'])
+
+        uid, token = self.get_verification_data()
+
+        response = self.client.get(
+            f'/api/verify-email/?uid={uid}&token={token}',
+        )
+
+        self.assertEqual(response.status_code, 400)
+        self.assertEqual(
+            response.data['detail'],
+            'Email address is already verified.',
+        )
 
 class PrivateUserApiTests(TestCase):
     """Test API requests that require authentication."""
@@ -817,7 +1175,7 @@ class PasswordResetTests(TestCase):
         self.assertEqual(response.status_code, 200)
         self.assertEqual(
             response.data['detail'],
-            'Password has been reset successfully.'
+            'Password has been reset successfully.',
         )
 
         self.user.refresh_from_db()
@@ -885,6 +1243,152 @@ class PasswordResetTests(TestCase):
         )
 
         self.assertEqual(response.status_code, 400)
+
+    def test_password_reset_request_user_not_found(self):
+        """Test password reset request for an unknown email."""
+
+        response = self.client.post(
+            '/api/password-reset/',
+            {'email': 'doesnotexist@example.com'},
+        )
+
+        self.assertEqual(response.status_code, 404)
+        self.assertEqual(
+            response.data['detail'],
+            'No user found with this email address.',
+        )
+
+    def test_password_reset_confirm_invalid_uid(self):
+        """Test password reset confirmation with an invalid UID."""
+
+        payload = {
+            'uid': 'invalid-uid',
+            'token': 'invalid-token',
+            'new_password': 'NewPassword123!',
+            'new_password_confirm': 'NewPassword123!',
+        }
+
+        response = self.client.post(
+            '/api/password-reset-confirm/',
+            payload,
+        )
+
+        self.assertEqual(response.status_code, 400)
+        self.assertEqual(
+            response.data['detail'],
+            'Invalid password reset link.',
+        )
+
+    def test_password_reset_confirm_invalid_token(self):
+        """Test password reset confirmation with an invalid token."""
+
+        response = self.client.post(
+            '/api/password-reset/',
+            {'email': self.user.email},
+        )
+
+        self.assertEqual(response.status_code, 200)
+
+        payload = {
+            'uid': response.data['uid'],
+            'token': 'invalid-token',
+            'new_password': 'NewPassword123!',
+            'new_password_confirm': 'NewPassword123!',
+        }
+
+        response = self.client.post(
+            '/api/password-reset-confirm/',
+            payload,
+        )
+
+        self.assertEqual(response.status_code, 400)
+        self.assertEqual(
+            response.data['detail'],
+            'Invalid or expired password reset token.',
+        )
+
+class PasswordResetErrorTests(TestCase):
+    """Tests for password reset error handling."""
+
+    def setUp(self):
+        self.client = APIClient()
+
+        self.user = models.UserProfile.objects.create_user(
+            email='reseterror@example.com',
+            name='Reset Error User',
+            password='OldPassword123!',
+        )
+
+    def test_password_reset_rejects_unknown_email(self):
+        """Test that an unknown email returns a 404 response."""
+
+        response = self.client.post(
+            '/api/password-reset/',
+            {
+                'email': 'doesnotexist@example.com',
+            },
+            format='json',
+        )
+
+        self.assertEqual(response.status_code, 404)
+        self.assertEqual(
+            response.data['detail'],
+            'No user found with this email address.',
+        )
+
+    def test_password_reset_confirm_rejects_invalid_uid(self):
+        """Test that an invalid UID is rejected."""
+
+        payload = {
+            'uid': 'invalid-uid',
+            'token': 'invalid-token',
+            'new_password': 'NewPassword123!',
+            'new_password_confirm': 'NewPassword123!',
+        }
+
+        response = self.client.post(
+            '/api/password-reset-confirm/',
+            payload,
+            format='json',
+        )
+
+        self.assertEqual(response.status_code, 400)
+        self.assertEqual(
+            response.data['detail'],
+            'Invalid password reset link.',
+        )
+
+    def test_password_reset_confirm_rejects_invalid_token(self):
+        """Test that an invalid reset token is rejected."""
+
+        uid = urlsafe_base64_encode(
+            force_bytes(self.user.pk)
+        )
+
+        payload = {
+            'uid': uid,
+            'token': 'invalid-token',
+            'new_password': 'NewPassword123!',
+            'new_password_confirm': 'NewPassword123!',
+        }
+
+        response = self.client.post(
+            '/api/password-reset-confirm/',
+            payload,
+            format='json',
+        )
+
+        self.assertEqual(response.status_code, 400)
+        self.assertEqual(
+            response.data['detail'],
+            'Invalid or expired password reset token.',
+        )
+
+        self.user.refresh_from_db()
+
+        self.assertTrue(
+            self.user.check_password('OldPassword123!')
+        )
 
 class LoginAuditTests(TestCase):
     """Tests audit logging for successful and failed logins."""
@@ -989,7 +1493,20 @@ class AccountStatusAuditTests(TestCase):
         self.staff_user.save(update_fields=['is_staff'])
 
         self.client.force_authenticate(user=self.staff_user)
+    def test_account_status_returns_404_for_unknown_user(self):
+        """Test that an unknown user returns a 404 response."""
 
+        response = self.client.patch(
+            '/api/account-status/999999/',
+            {'is_active': False},
+            format='json',
+        )
+
+        self.assertEqual(response.status_code, 404)
+        self.assertEqual(
+            response.data['detail'],
+            'User not found.',
+        )
     def test_activate_account_creates_audit_and_security_event(self):
         """Test that activating an account creates audit records."""
 
@@ -1055,6 +1572,7 @@ class AccountStatusAuditTests(TestCase):
             'User account was deactivated.',
         )
 
+
 class UnauthorizedAccessAuditTests(TestCase):
     """Tests audit logging for unauthorized access attempts."""
 
@@ -1112,3 +1630,65 @@ class UnauthorizedAccessAuditTests(TestCase):
             self.user2.name,
             'Unauthorized User Two',
         )
+
+class LogoutTests(TestCase):
+    """Tests for user logout and refresh-token blacklisting."""
+
+    def setUp(self):
+        self.client = APIClient()
+
+        self.user = models.UserProfile.objects.create_user(
+            email='logout@example.com',
+            name='Logout User',
+            password='LogoutPassword123!',
+        )
+
+    def test_logout_requires_refresh_token(self):
+        """Test that logout requires a refresh token."""
+
+        response = self.client.post(
+            '/api/logout/',
+            {},
+            format='json',
+        )
+
+        self.assertEqual(response.status_code, 400)
+        self.assertEqual(
+            response.data['detail'],
+            'Refresh token is required.',
+        )
+
+    def test_logout_rejects_invalid_refresh_token(self):
+        """Test that an invalid refresh token is rejected."""
+
+        response = self.client.post(
+            '/api/logout/',
+            {'refresh': 'invalid-refresh-token'},
+            format='json',
+        )
+
+        self.assertEqual(response.status_code, 400)
+        self.assertEqual(
+            response.data['detail'],
+            'Invalid or expired refresh token.',
+        )
+
+    def test_logout_blacklists_valid_refresh_token(self):
+        """Test that a valid refresh token is blacklisted."""
+
+        refresh = RefreshToken.for_user(self.user)
+
+        response = self.client.post(
+            '/api/logout/',
+            {'refresh': str(refresh)},
+            format='json',
+        )
+
+        self.assertEqual(response.status_code, 205)
+        self.assertEqual(
+            response.data['detail'],
+            'Successfully logged out.',
+        )
+
+        with self.assertRaises(TokenError):
+            RefreshToken(str(refresh))
