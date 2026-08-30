@@ -45,6 +45,9 @@ jobs:
       - name: Run Ruff
         run: |
           ruff check .
+      - name: Run pip-audit
+        run: |
+          pip-audit
       - name: Run Django checks
         working-directory: src/profiles_project
         env:
