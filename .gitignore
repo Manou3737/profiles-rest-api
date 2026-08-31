@@ -219,3 +219,7 @@ __marimo__/
 
 # Streamlit
 .streamlit/secrets.toml
+
+# Local database backups and exported data
+*.dump
+sqlite_profiles_data.json

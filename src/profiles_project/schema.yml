@@ -1,0 +1,1978 @@
+openapi: 3.0.3
+info:
+  title: Profiles REST API
+  version: 1.0.0
+  description: REST API for user profiles, authentication, permissions and security
+    events.
+paths:
+  /api/account-status/{id}/:
+    patch:
+      operationId: account_status_partial_update
+      description: Activate or deactivate a user account.
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: Object ID.
+        required: true
+      tags:
+      - account-status
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PatchedAccountStatus'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/PatchedAccountStatus'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/PatchedAccountStatus'
+      security:
+      - jwtAuth: []
+      - BearerAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AccountStatus'
+          description: ''
+  /api/feed/:
+    get:
+      operationId: feed_list
+      description: Handles creating, reading and updating profile feed items.
+      parameters:
+      - name: page
+        required: false
+        in: query
+        description: A page number within the paginated result set.
+        schema:
+          type: integer
+      tags:
+      - feed
+      security:
+      - jwtAuth: []
+      - BearerAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginatedProfileFeedItemList'
+          description: ''
+    post:
+      operationId: feed_create
+      description: Handles creating, reading and updating profile feed items.
+      tags:
+      - feed
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ProfileFeedItem'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/ProfileFeedItem'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/ProfileFeedItem'
+        required: true
+      security:
+      - jwtAuth: []
+      - BearerAuth: []
+      responses:
+        '201':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProfileFeedItem'
+          description: ''
+  /api/feed/{id}/:
+    get:
+      operationId: feed_retrieve
+      description: Handles creating, reading and updating profile feed items.
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this profile feed item.
+        required: true
+      tags:
+      - feed
+      security:
+      - jwtAuth: []
+      - BearerAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProfileFeedItem'
+          description: ''
+    put:
+      operationId: feed_update
+      description: Handles creating, reading and updating profile feed items.
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this profile feed item.
+        required: true
+      tags:
+      - feed
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ProfileFeedItem'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/ProfileFeedItem'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/ProfileFeedItem'
+        required: true
+      security:
+      - jwtAuth: []
+      - BearerAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProfileFeedItem'
+          description: ''
+    patch:
+      operationId: feed_partial_update
+      description: Handles creating, reading and updating profile feed items.
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this profile feed item.
+        required: true
+      tags:
+      - feed
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PatchedProfileFeedItem'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/PatchedProfileFeedItem'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/PatchedProfileFeedItem'
+      security:
+      - jwtAuth: []
+      - BearerAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProfileFeedItem'
+          description: ''
+    delete:
+      operationId: feed_destroy
+      description: Handles creating, reading and updating profile feed items.
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this profile feed item.
+        required: true
+      tags:
+      - feed
+      security:
+      - jwtAuth: []
+      - BearerAuth: []
+      responses:
+        '204':
+          description: No response body
+  /api/hello-view/:
+    get:
+      operationId: hello_view_retrieve
+      description: Returns a list of APIView features.
+      tags:
+      - hello-view
+      security:
+      - jwtAuth: []
+      - BearerAuth: []
+      - {}
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Hello'
+          description: ''
+    post:
+      operationId: hello_view_create
+      description: Create a hello message with our name.
+      tags:
+      - hello-view
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Hello'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/Hello'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/Hello'
+        required: true
+      security:
+      - jwtAuth: []
+      - BearerAuth: []
+      - {}
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Hello'
+          description: ''
+    put:
+      operationId: hello_view_update
+      description: Handles updating an object.
+      tags:
+      - hello-view
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Hello'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/Hello'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/Hello'
+        required: true
+      security:
+      - jwtAuth: []
+      - BearerAuth: []
+      - {}
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Hello'
+          description: ''
+    patch:
+      operationId: hello_view_partial_update
+      description: Handles a partially updated object with the fields provided.
+      tags:
+      - hello-view
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PatchedHello'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/PatchedHello'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/PatchedHello'
+      security:
+      - jwtAuth: []
+      - BearerAuth: []
+      - {}
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Hello'
+          description: ''
+    delete:
+      operationId: hello_view_destroy
+      description: Deletes an object.
+      tags:
+      - hello-view
+      security:
+      - jwtAuth: []
+      - BearerAuth: []
+      - {}
+      responses:
+        '204':
+          description: No response body
+  /api/hello-viewset/:
+    get:
+      operationId: hello_viewset_list
+      description: Return a hello message.
+      tags:
+      - hello-viewset
+      security:
+      - jwtAuth: []
+      - BearerAuth: []
+      - {}
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Hello'
+          description: ''
+    post:
+      operationId: hello_viewset_create
+      description: Creates a new hello message.
+      tags:
+      - hello-viewset
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Hello'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/Hello'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/Hello'
+        required: true
+      security:
+      - jwtAuth: []
+      - BearerAuth: []
+      - {}
+      responses:
+        '201':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Hello'
+          description: ''
+  /api/hello-viewset/{id}/:
+    get:
+      operationId: hello_viewset_retrieve
+      description: Handles getting an object by its ID.
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: Object ID.
+        required: true
+      tags:
+      - hello-viewset
+      security:
+      - jwtAuth: []
+      - BearerAuth: []
+      - {}
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Hello'
+          description: ''
+    put:
+      operationId: hello_viewset_update
+      description: Handles updating an object.
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: Object ID.
+        required: true
+      tags:
+      - hello-viewset
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Hello'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/Hello'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/Hello'
+        required: true
+      security:
+      - jwtAuth: []
+      - BearerAuth: []
+      - {}
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Hello'
+          description: ''
+    patch:
+      operationId: hello_viewset_partial_update
+      description: Handles updating part of an object.
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: Object ID.
+        required: true
+      tags:
+      - hello-viewset
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PatchedHello'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/PatchedHello'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/PatchedHello'
+      security:
+      - jwtAuth: []
+      - BearerAuth: []
+      - {}
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Hello'
+          description: ''
+    delete:
+      operationId: hello_viewset_destroy
+      description: Handles removing an object.
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: Object ID.
+        required: true
+      tags:
+      - hello-viewset
+      security:
+      - jwtAuth: []
+      - BearerAuth: []
+      - {}
+      responses:
+        '204':
+          description: No response body
+  /api/login/:
+    post:
+      operationId: login_create
+      description: Authenticates a user with email and password and returns a JWT
+        access token and refresh token.
+      summary: Login
+      tags:
+      - login
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AuthToken'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/AuthToken'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/AuthToken'
+        required: true
+      security:
+      - jwtAuth: []
+      - BearerAuth: []
+      - {}
+      responses:
+        '200':
+          description: Authentication successful. Returns JWT tokens.
+        '400':
+          description: Invalid credentials or invalid request data.
+        '429':
+          description: Too many login attempts.
+  /api/logout/:
+    post:
+      operationId: logout_create
+      description: Blacklists the supplied refresh token and logs the user out.
+      summary: Logout
+      tags:
+      - logout
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                refresh:
+                  type: string
+                  description: JWT refresh token.
+              required:
+              - refresh
+      security:
+      - jwtAuth: []
+      - BearerAuth: []
+      - {}
+      responses:
+        '205':
+          description: Successfully logged out.
+        '400':
+          description: Refresh token is missing, invalid, or expired.
+  /api/password-change/:
+    post:
+      operationId: password_change_create
+      description: Changes the password of the currently authenticated user. Authentication
+        with a valid JWT access token is required.
+      summary: Change password
+      tags:
+      - password-change
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PasswordChange'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/PasswordChange'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/PasswordChange'
+        required: true
+      security:
+      - jwtAuth: []
+      - BearerAuth: []
+      responses:
+        '200':
+          description: Password changed successfully.
+        '400':
+          description: Invalid password data.
+        '401':
+          description: Authentication credentials were not provided or are invalid.
+  /api/password-reset/:
+    post:
+      operationId: password_reset_create
+      description: Generates a password reset token for the user associated with the
+        supplied email address.
+      summary: Request password reset
+      tags:
+      - password-reset
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PasswordResetRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/PasswordResetRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/PasswordResetRequest'
+        required: true
+      security:
+      - jwtAuth: []
+      - BearerAuth: []
+      - {}
+      responses:
+        '200':
+          description: Password reset token generated successfully. Returns the UID
+            and reset token.
+        '400':
+          description: Invalid email address or request data.
+        '404':
+          description: No user found with this email address.
+  /api/password-reset-confirm/:
+    post:
+      operationId: password_reset_confirm_create
+      description: Sets a new password using the UID and password reset token provided
+        in the request.
+      summary: Confirm password reset
+      tags:
+      - password-reset-confirm
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PasswordResetConfirm'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/PasswordResetConfirm'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/PasswordResetConfirm'
+        required: true
+      security:
+      - jwtAuth: []
+      - BearerAuth: []
+      - {}
+      responses:
+        '200':
+          description: Password has been reset successfully.
+        '400':
+          description: Invalid or expired password reset token, invalid reset link,
+            or invalid password data.
+  /api/profile/:
+    get:
+      operationId: profile_list
+      description: Handles creating and updating profiles.
+      parameters:
+      - in: query
+        name: is_active
+        schema:
+          type: boolean
+      - name: ordering
+        required: false
+        in: query
+        description: Which field to use when ordering the results.
+        schema:
+          type: string
+      - name: page
+        required: false
+        in: query
+        description: A page number within the paginated result set.
+        schema:
+          type: integer
+      - name: search
+        required: false
+        in: query
+        description: A search term.
+        schema:
+          type: string
+      tags:
+      - profile
+      security:
+      - jwtAuth: []
+      - BearerAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginatedUserProfileUpdateList'
+          description: ''
+    post:
+      operationId: profile_create
+      description: Handles creating and updating profiles.
+      tags:
+      - profile
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UserProfile'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/UserProfile'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/UserProfile'
+        required: true
+      security:
+      - jwtAuth: []
+      - BearerAuth: []
+      responses:
+        '201':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UserProfile'
+          description: ''
+  /api/profile/{id}/:
+    get:
+      operationId: profile_retrieve
+      description: Handles creating and updating profiles.
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this user profile.
+        required: true
+      tags:
+      - profile
+      security:
+      - jwtAuth: []
+      - BearerAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UserProfileUpdate'
+          description: ''
+    put:
+      operationId: profile_update
+      description: Handles creating and updating profiles.
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this user profile.
+        required: true
+      tags:
+      - profile
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UserProfileUpdate'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/UserProfileUpdate'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/UserProfileUpdate'
+        required: true
+      security:
+      - jwtAuth: []
+      - BearerAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UserProfileUpdate'
+          description: ''
+    patch:
+      operationId: profile_partial_update
+      description: Handles creating and updating profiles.
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this user profile.
+        required: true
+      tags:
+      - profile
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PatchedUserProfileUpdate'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/PatchedUserProfileUpdate'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/PatchedUserProfileUpdate'
+      security:
+      - jwtAuth: []
+      - BearerAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UserProfileUpdate'
+          description: ''
+    delete:
+      operationId: profile_destroy
+      description: Handles creating and updating profiles.
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this user profile.
+        required: true
+      tags:
+      - profile
+      security:
+      - jwtAuth: []
+      - BearerAuth: []
+      responses:
+        '204':
+          description: No response body
+  /api/profile/admin-users/:
+    get:
+      operationId: profile_admin_users_retrieve
+      description: Return all users for administrators.
+      tags:
+      - profile
+      security:
+      - jwtAuth: []
+      - BearerAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UserProfileUpdate'
+          description: ''
+  /api/register/:
+    post:
+      operationId: register_create
+      description: Creates a new user account and sends an email verification link
+        to the registered email address.
+      summary: Register user
+      tags:
+      - register
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UserProfile'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/UserProfile'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/UserProfile'
+        required: true
+      security:
+      - jwtAuth: []
+      - BearerAuth: []
+      - {}
+      responses:
+        '201':
+          description: User account created successfully.
+        '400':
+          description: Invalid registration data.
+  /api/v1/account-status/{id}/:
+    patch:
+      operationId: v1_account_status_partial_update
+      description: Activate or deactivate a user account.
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: Object ID.
+        required: true
+      tags:
+      - v1
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PatchedAccountStatus'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/PatchedAccountStatus'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/PatchedAccountStatus'
+      security:
+      - jwtAuth: []
+      - BearerAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AccountStatus'
+          description: ''
+  /api/v1/feed/:
+    get:
+      operationId: v1_feed_list
+      description: Handles creating, reading and updating profile feed items.
+      parameters:
+      - name: page
+        required: false
+        in: query
+        description: A page number within the paginated result set.
+        schema:
+          type: integer
+      tags:
+      - v1
+      security:
+      - jwtAuth: []
+      - BearerAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginatedProfileFeedItemList'
+          description: ''
+    post:
+      operationId: v1_feed_create
+      description: Handles creating, reading and updating profile feed items.
+      tags:
+      - v1
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ProfileFeedItem'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/ProfileFeedItem'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/ProfileFeedItem'
+        required: true
+      security:
+      - jwtAuth: []
+      - BearerAuth: []
+      responses:
+        '201':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProfileFeedItem'
+          description: ''
+  /api/v1/feed/{id}/:
+    get:
+      operationId: v1_feed_retrieve
+      description: Handles creating, reading and updating profile feed items.
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this profile feed item.
+        required: true
+      tags:
+      - v1
+      security:
+      - jwtAuth: []
+      - BearerAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProfileFeedItem'
+          description: ''
+    put:
+      operationId: v1_feed_update
+      description: Handles creating, reading and updating profile feed items.
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this profile feed item.
+        required: true
+      tags:
+      - v1
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ProfileFeedItem'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/ProfileFeedItem'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/ProfileFeedItem'
+        required: true
+      security:
+      - jwtAuth: []
+      - BearerAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProfileFeedItem'
+          description: ''
+    patch:
+      operationId: v1_feed_partial_update
+      description: Handles creating, reading and updating profile feed items.
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this profile feed item.
+        required: true
+      tags:
+      - v1
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PatchedProfileFeedItem'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/PatchedProfileFeedItem'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/PatchedProfileFeedItem'
+      security:
+      - jwtAuth: []
+      - BearerAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProfileFeedItem'
+          description: ''
+    delete:
+      operationId: v1_feed_destroy
+      description: Handles creating, reading and updating profile feed items.
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this profile feed item.
+        required: true
+      tags:
+      - v1
+      security:
+      - jwtAuth: []
+      - BearerAuth: []
+      responses:
+        '204':
+          description: No response body
+  /api/v1/hello-view/:
+    get:
+      operationId: v1_hello_view_retrieve
+      description: Returns a list of APIView features.
+      tags:
+      - v1
+      security:
+      - jwtAuth: []
+      - BearerAuth: []
+      - {}
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Hello'
+          description: ''
+    post:
+      operationId: v1_hello_view_create
+      description: Create a hello message with our name.
+      tags:
+      - v1
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Hello'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/Hello'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/Hello'
+        required: true
+      security:
+      - jwtAuth: []
+      - BearerAuth: []
+      - {}
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Hello'
+          description: ''
+    put:
+      operationId: v1_hello_view_update
+      description: Handles updating an object.
+      tags:
+      - v1
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Hello'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/Hello'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/Hello'
+        required: true
+      security:
+      - jwtAuth: []
+      - BearerAuth: []
+      - {}
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Hello'
+          description: ''
+    patch:
+      operationId: v1_hello_view_partial_update
+      description: Handles a partially updated object with the fields provided.
+      tags:
+      - v1
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PatchedHello'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/PatchedHello'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/PatchedHello'
+      security:
+      - jwtAuth: []
+      - BearerAuth: []
+      - {}
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Hello'
+          description: ''
+    delete:
+      operationId: v1_hello_view_destroy
+      description: Deletes an object.
+      tags:
+      - v1
+      security:
+      - jwtAuth: []
+      - BearerAuth: []
+      - {}
+      responses:
+        '204':
+          description: No response body
+  /api/v1/hello-viewset/:
+    get:
+      operationId: v1_hello_viewset_list
+      description: Return a hello message.
+      tags:
+      - v1
+      security:
+      - jwtAuth: []
+      - BearerAuth: []
+      - {}
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Hello'
+          description: ''
+    post:
+      operationId: v1_hello_viewset_create
+      description: Creates a new hello message.
+      tags:
+      - v1
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Hello'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/Hello'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/Hello'
+        required: true
+      security:
+      - jwtAuth: []
+      - BearerAuth: []
+      - {}
+      responses:
+        '201':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Hello'
+          description: ''
+  /api/v1/hello-viewset/{id}/:
+    get:
+      operationId: v1_hello_viewset_retrieve
+      description: Handles getting an object by its ID.
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: Object ID.
+        required: true
+      tags:
+      - v1
+      security:
+      - jwtAuth: []
+      - BearerAuth: []
+      - {}
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Hello'
+          description: ''
+    put:
+      operationId: v1_hello_viewset_update
+      description: Handles updating an object.
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: Object ID.
+        required: true
+      tags:
+      - v1
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Hello'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/Hello'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/Hello'
+        required: true
+      security:
+      - jwtAuth: []
+      - BearerAuth: []
+      - {}
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Hello'
+          description: ''
+    patch:
+      operationId: v1_hello_viewset_partial_update
+      description: Handles updating part of an object.
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: Object ID.
+        required: true
+      tags:
+      - v1
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PatchedHello'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/PatchedHello'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/PatchedHello'
+      security:
+      - jwtAuth: []
+      - BearerAuth: []
+      - {}
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Hello'
+          description: ''
+    delete:
+      operationId: v1_hello_viewset_destroy
+      description: Handles removing an object.
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: Object ID.
+        required: true
+      tags:
+      - v1
+      security:
+      - jwtAuth: []
+      - BearerAuth: []
+      - {}
+      responses:
+        '204':
+          description: No response body
+  /api/v1/login/:
+    post:
+      operationId: v1_login_create
+      description: Authenticates a user with email and password and returns a JWT
+        access token and refresh token.
+      summary: Login
+      tags:
+      - v1
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AuthToken'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/AuthToken'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/AuthToken'
+        required: true
+      security:
+      - jwtAuth: []
+      - BearerAuth: []
+      - {}
+      responses:
+        '200':
+          description: Authentication successful. Returns JWT tokens.
+        '400':
+          description: Invalid credentials or invalid request data.
+        '429':
+          description: Too many login attempts.
+  /api/v1/logout/:
+    post:
+      operationId: v1_logout_create
+      description: Blacklists the supplied refresh token and logs the user out.
+      summary: Logout
+      tags:
+      - v1
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                refresh:
+                  type: string
+                  description: JWT refresh token.
+              required:
+              - refresh
+      security:
+      - jwtAuth: []
+      - BearerAuth: []
+      - {}
+      responses:
+        '205':
+          description: Successfully logged out.
+        '400':
+          description: Refresh token is missing, invalid, or expired.
+  /api/v1/password-change/:
+    post:
+      operationId: v1_password_change_create
+      description: Changes the password of the currently authenticated user. Authentication
+        with a valid JWT access token is required.
+      summary: Change password
+      tags:
+      - v1
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PasswordChange'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/PasswordChange'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/PasswordChange'
+        required: true
+      security:
+      - jwtAuth: []
+      - BearerAuth: []
+      responses:
+        '200':
+          description: Password changed successfully.
+        '400':
+          description: Invalid password data.
+        '401':
+          description: Authentication credentials were not provided or are invalid.
+  /api/v1/password-reset/:
+    post:
+      operationId: v1_password_reset_create
+      description: Generates a password reset token for the user associated with the
+        supplied email address.
+      summary: Request password reset
+      tags:
+      - v1
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PasswordResetRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/PasswordResetRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/PasswordResetRequest'
+        required: true
+      security:
+      - jwtAuth: []
+      - BearerAuth: []
+      - {}
+      responses:
+        '200':
+          description: Password reset token generated successfully. Returns the UID
+            and reset token.
+        '400':
+          description: Invalid email address or request data.
+        '404':
+          description: No user found with this email address.
+  /api/v1/password-reset-confirm/:
+    post:
+      operationId: v1_password_reset_confirm_create
+      description: Sets a new password using the UID and password reset token provided
+        in the request.
+      summary: Confirm password reset
+      tags:
+      - v1
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PasswordResetConfirm'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/PasswordResetConfirm'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/PasswordResetConfirm'
+        required: true
+      security:
+      - jwtAuth: []
+      - BearerAuth: []
+      - {}
+      responses:
+        '200':
+          description: Password has been reset successfully.
+        '400':
+          description: Invalid or expired password reset token, invalid reset link,
+            or invalid password data.
+  /api/v1/profile/:
+    get:
+      operationId: v1_profile_list
+      description: Handles creating and updating profiles.
+      parameters:
+      - in: query
+        name: is_active
+        schema:
+          type: boolean
+      - name: ordering
+        required: false
+        in: query
+        description: Which field to use when ordering the results.
+        schema:
+          type: string
+      - name: page
+        required: false
+        in: query
+        description: A page number within the paginated result set.
+        schema:
+          type: integer
+      - name: search
+        required: false
+        in: query
+        description: A search term.
+        schema:
+          type: string
+      tags:
+      - v1
+      security:
+      - jwtAuth: []
+      - BearerAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginatedUserProfileUpdateList'
+          description: ''
+    post:
+      operationId: v1_profile_create
+      description: Handles creating and updating profiles.
+      tags:
+      - v1
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UserProfile'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/UserProfile'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/UserProfile'
+        required: true
+      security:
+      - jwtAuth: []
+      - BearerAuth: []
+      responses:
+        '201':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UserProfile'
+          description: ''
+  /api/v1/profile/{id}/:
+    get:
+      operationId: v1_profile_retrieve
+      description: Handles creating and updating profiles.
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this user profile.
+        required: true
+      tags:
+      - v1
+      security:
+      - jwtAuth: []
+      - BearerAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UserProfileUpdate'
+          description: ''
+    put:
+      operationId: v1_profile_update
+      description: Handles creating and updating profiles.
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this user profile.
+        required: true
+      tags:
+      - v1
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UserProfileUpdate'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/UserProfileUpdate'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/UserProfileUpdate'
+        required: true
+      security:
+      - jwtAuth: []
+      - BearerAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UserProfileUpdate'
+          description: ''
+    patch:
+      operationId: v1_profile_partial_update
+      description: Handles creating and updating profiles.
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this user profile.
+        required: true
+      tags:
+      - v1
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PatchedUserProfileUpdate'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/PatchedUserProfileUpdate'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/PatchedUserProfileUpdate'
+      security:
+      - jwtAuth: []
+      - BearerAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UserProfileUpdate'
+          description: ''
+    delete:
+      operationId: v1_profile_destroy
+      description: Handles creating and updating profiles.
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this user profile.
+        required: true
+      tags:
+      - v1
+      security:
+      - jwtAuth: []
+      - BearerAuth: []
+      responses:
+        '204':
+          description: No response body
+  /api/v1/profile/admin-users/:
+    get:
+      operationId: v1_profile_admin_users_retrieve
+      description: Return all users for administrators.
+      tags:
+      - v1
+      security:
+      - jwtAuth: []
+      - BearerAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UserProfileUpdate'
+          description: ''
+  /api/v1/register/:
+    post:
+      operationId: v1_register_create
+      description: Creates a new user account and sends an email verification link
+        to the registered email address.
+      summary: Register user
+      tags:
+      - v1
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UserProfile'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/UserProfile'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/UserProfile'
+        required: true
+      security:
+      - jwtAuth: []
+      - BearerAuth: []
+      - {}
+      responses:
+        '201':
+          description: User account created successfully.
+        '400':
+          description: Invalid registration data.
+  /api/v1/verify-email/:
+    get:
+      operationId: v1_verify_email_list
+      description: Verifies a user email address using the UID and verification token
+        received by email.
+      summary: Verify email address
+      parameters:
+      - in: query
+        name: token
+        schema:
+          type: string
+        description: Email verification token.
+        required: true
+      - in: query
+        name: uid
+        schema:
+          type: string
+        description: Base64-encoded user ID.
+        required: true
+      tags:
+      - v1
+      security:
+      - jwtAuth: []
+      - BearerAuth: []
+      - {}
+      responses:
+        '200':
+          description: Email address verified successfully.
+        '400':
+          description: Invalid or expired verification request.
+  /api/verify-email/:
+    get:
+      operationId: verify_email_list
+      description: Verifies a user email address using the UID and verification token
+        received by email.
+      summary: Verify email address
+      parameters:
+      - in: query
+        name: token
+        schema:
+          type: string
+        description: Email verification token.
+        required: true
+      - in: query
+        name: uid
+        schema:
+          type: string
+        description: Base64-encoded user ID.
+        required: true
+      tags:
+      - verify-email
+      security:
+      - jwtAuth: []
+      - BearerAuth: []
+      - {}
+      responses:
+        '200':
+          description: Email address verified successfully.
+        '400':
+          description: Invalid or expired verification request.
+components:
+  schemas:
+    AccountStatus:
+      type: object
+      description: Serializer for account activation and deactivation.
+      properties:
+        is_active:
+          type: boolean
+      required:
+      - is_active
+    AuthToken:
+      type: object
+      description: Serializes the user authentication credentials.
+      properties:
+        email:
+          type: string
+          format: email
+        password:
+          type: string
+      required:
+      - email
+      - password
+    Hello:
+      type: object
+      description: Serializes a name field for testing our APIView.
+      properties:
+        name:
+          type: string
+          maxLength: 10
+      required:
+      - name
+    PaginatedProfileFeedItemList:
+      type: object
+      required:
+      - count
+      - results
+      properties:
+        count:
+          type: integer
+          example: 123
+        next:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?page=4
+        previous:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?page=2
+        results:
+          type: array
+          items:
+            $ref: '#/components/schemas/ProfileFeedItem'
+    PaginatedUserProfileUpdateList:
+      type: object
+      required:
+      - count
+      - results
+      properties:
+        count:
+          type: integer
+          example: 123
+        next:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?page=4
+        previous:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?page=2
+        results:
+          type: array
+          items:
+            $ref: '#/components/schemas/UserProfileUpdate'
+    PasswordChange:
+      type: object
+      description: |-
+        Validate the old password, new password confirmation,
+        and password strength policy.
+      properties:
+        old_password:
+          type: string
+          writeOnly: true
+        new_password:
+          type: string
+          writeOnly: true
+        new_password_confirm:
+          type: string
+          writeOnly: true
+      required:
+      - new_password
+      - new_password_confirm
+      - old_password
+    PasswordResetConfirm:
+      type: object
+      description: Serializes password reset confirmation.
+      properties:
+        new_password:
+          type: string
+          writeOnly: true
+        new_password_confirm:
+          type: string
+          writeOnly: true
+        uid:
+          type: string
+        token:
+          type: string
+      required:
+      - new_password
+      - new_password_confirm
+      - token
+      - uid
+    PasswordResetRequest:
+      type: object
+      description: Serializes password reset requests.
+      properties:
+        email:
+          type: string
+          format: email
+      required:
+      - email
+    PatchedAccountStatus:
+      type: object
+      description: Serializer for account activation and deactivation.
+      properties:
+        is_active:
+          type: boolean
+    PatchedHello:
+      type: object
+      description: Serializes a name field for testing our APIView.
+      properties:
+        name:
+          type: string
+          maxLength: 10
+    PatchedProfileFeedItem:
+      type: object
+      description: A serializer for profile feed items.
+      properties:
+        id:
+          type: integer
+          readOnly: true
+        user_profile:
+          type: integer
+          readOnly: true
+        status_text:
+          type: string
+          maxLength: 255
+        created_on:
+          type: string
+          format: date-time
+          readOnly: true
+    PatchedUserProfileUpdate:
+      type: object
+      description: Serializer for updating a user profile.
+      properties:
+        id:
+          type: integer
+          readOnly: true
+        email:
+          type: string
+          format: email
+          readOnly: true
+        name:
+          type: string
+          maxLength: 255
+        email_verified:
+          type: boolean
+          readOnly: true
+    ProfileFeedItem:
+      type: object
+      description: A serializer for profile feed items.
+      properties:
+        id:
+          type: integer
+          readOnly: true
+        user_profile:
+          type: integer
+          readOnly: true
+        status_text:
+          type: string
+          maxLength: 255
+        created_on:
+          type: string
+          format: date-time
+          readOnly: true
+      required:
+      - created_on
+      - id
+      - status_text
+      - user_profile
+    UserProfile:
+      type: object
+      description: A serializer for our user profile objects.
+      properties:
+        id:
+          type: integer
+          readOnly: true
+        email:
+          type: string
+          format: email
+          maxLength: 255
+        name:
+          type: string
+          maxLength: 255
+        password:
+          type: string
+          writeOnly: true
+          maxLength: 128
+        password_confirm:
+          type: string
+          writeOnly: true
+      required:
+      - email
+      - id
+      - name
+      - password
+      - password_confirm
+    UserProfileUpdate:
+      type: object
+      description: Serializer for updating a user profile.
+      properties:
+        id:
+          type: integer
+          readOnly: true
+        email:
+          type: string
+          format: email
+          readOnly: true
+        name:
+          type: string
+          maxLength: 255
+        email_verified:
+          type: boolean
+          readOnly: true
+      required:
+      - email
+      - email_verified
+      - id
+      - name
+  securitySchemes:
+    jwtAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
