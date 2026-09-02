@@ -1066,7 +1066,7 @@ class PasswordChangeTests(TestCase):
         response = self.client.post('/api/password-change/', payload)
 
         self.assertEqual(response.status_code, 400)
-
+        self.assertIn('new_password', response.data)
         self.user.refresh_from_db()
 
         self.assertTrue(
@@ -1692,3 +1692,32 @@ class LogoutTests(TestCase):
 
         with self.assertRaises(TokenError):
             RefreshToken(str(refresh))
+
+class AuditSecurityModelChoiceTests(TestCase):
+    """Tests for audit log and security event choices."""
+
+    def test_audit_log_choices_include_used_actions(self):
+        """Test that AuditLog choices match actions used by the API."""
+
+        choices = dict(models.AuditLog.ACTION_CHOICES)
+
+        self.assertIn('LOGIN', choices)
+        self.assertIn('LOGIN_FAILED', choices)
+        self.assertIn('PASSWORD_CHANGE', choices)
+        self.assertIn('ACCOUNT_ACTIVATED', choices)
+        self.assertIn('ACCOUNT_DEACTIVATED', choices)
+        self.assertIn('ACCOUNT_CHANGE', choices)
+        self.assertIn('UNAUTHORIZED_ACCESS', choices)
+
+    def test_security_event_choices_include_used_event_types(self):
+        """Test that SecurityEvent choices match events used by the API."""
+
+        event_types = dict(models.SecurityEvent.EVENT_TYPES)
+
+        self.assertIn('LOGIN_SUCCESS', event_types)
+        self.assertIn('LOGIN_FAILED', event_types)
+        self.assertIn('PASSWORD_CHANGED', event_types)
+        self.assertIn('ACCOUNT_ACTIVATED', event_types)
+        self.assertIn('ACCOUNT_DEACTIVATED', event_types)
+        self.assertIn('ACCOUNT_CHANGE', event_types)
+        self.assertIn('UNAUTHORIZED_ACCESS', event_types)

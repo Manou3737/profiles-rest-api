@@ -105,23 +105,21 @@ class AuthTokenSerializer(serializers.Serializer):
         return attrs
 
 class PasswordChangeSerializer(serializers.Serializer):
-    """Validate the old password, new password confirmation,
-and password strength policy."""
+    """Serializer for changing a user's password."""
 
     old_password = serializers.CharField(
-        write_only=True,
         style={'input_type': 'password'},
-        trim_whitespace=False,
+        write_only=True,
     )
+
     new_password = serializers.CharField(
-        write_only=True,
         style={'input_type': 'password'},
-        trim_whitespace=False,
+        write_only=True,
     )
+
     new_password_confirm = serializers.CharField(
-        write_only=True,
         style={'input_type': 'password'},
-        trim_whitespace=False,
+        write_only=True,
     )
 
     def validate(self, attrs):
@@ -139,7 +137,12 @@ and password strength policy."""
                 'new_password_confirm': 'Passwords do not match.'
             })
 
-        validate_password(attrs['new_password'], user=user)
+        try:
+            validate_password(attrs['new_password'], user=user)
+        except ValidationError as exc:
+            raise serializers.ValidationError({
+                'new_password': exc.messages
+            })
 
         return attrs
 class PasswordResetRequestSerializer(serializers.Serializer):

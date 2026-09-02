@@ -75,6 +75,9 @@ class AuditLog(models.Model):
     ACTION_CHOICES = (
         ('LOGIN', 'Login'),
         ('LOGIN_FAILED', 'Login Failed'),
+        ('PASSWORD_CHANGE', 'Password Change'),
+        ('ACCOUNT_ACTIVATED', 'Account Activated'),
+        ('ACCOUNT_DEACTIVATED', 'Account Deactivated'),
         ('ACCOUNT_CHANGE', 'Account Change'),
         ('UNAUTHORIZED_ACCESS', 'Unauthorized Access'),
     )
@@ -101,6 +104,9 @@ class SecurityEvent(models.Model):
     EVENT_TYPES = (
         ('LOGIN_SUCCESS', 'Login Success'),
         ('LOGIN_FAILED', 'Login Failed'),
+        ('PASSWORD_CHANGED', 'Password Changed'),
+        ('ACCOUNT_ACTIVATED', 'Account Activated'),
+        ('ACCOUNT_DEACTIVATED', 'Account Deactivated'),
         ('ACCOUNT_CHANGE', 'Account Change'),
         ('UNAUTHORIZED_ACCESS', 'Unauthorized Access'),
     )
