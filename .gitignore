@@ -223,3 +223,11 @@ __marimo__/
 # Local database backups and exported data
 *.dump
 sqlite_profiles_data.json
+
+# SIEM local runtime data
+logs/
+elastic-agent/
+
+# Local backup files
+*.backup
+*.before-security

@@ -25,6 +25,12 @@ from drf_spectacular.utils import (
     OpenApiResponse,
     extend_schema,
 )
+from .siem import create_security_event
+from .detections import (
+    detect_brute_force,
+    detect_suspicious_ip,
+)
+
 from . import serializers
 from . import models
 from . import permissions
@@ -170,6 +176,26 @@ class HelloViewSet(viewsets.ViewSet):
 
 class UserProfileViewset(viewsets.ModelViewSet):
     """Handles creating and updating profiles."""
+
+    def perform_update(self, serializer):
+        """Update a profile and record the account change."""
+
+        user = serializer.save()
+
+        details = 'User profile information was changed.'
+
+        models.AuditLog.objects.create(
+            user=self.request.user,
+            action='ACCOUNT_CHANGE',
+            details=details,
+        )
+
+        create_security_event(
+            request=self.request,
+            user=self.request.user,
+            event_type='ACCOUNT_CHANGE',
+            details=details,
+        )
 
     def get_serializer_class(self):
         """Return appropriate serializer based on the action."""
@@ -374,6 +400,7 @@ class LoginViewSet(viewsets.ViewSet):
     def create(self, request):
         """Validate credentials and return JWT token."""
 
+        detect_suspicious_ip(request)
         serializer = self.serializer_class(
             data=request.data,
             context={'request': request}
@@ -387,11 +414,13 @@ class LoginViewSet(viewsets.ViewSet):
                 details='Failed login attempt.',
             )
 
-            models.SecurityEvent.objects.create(
+            create_security_event(
+                request=request,
                 event_type='LOGIN_FAILED',
                 details='Failed login attempt.',
             )
 
+            detect_brute_force(request)
             raise
 
         user = serializer.validated_data['user']
@@ -404,7 +433,8 @@ class LoginViewSet(viewsets.ViewSet):
             details='User logged in successfully.',
         )
 
-        models.SecurityEvent.objects.create(
+        create_security_event(
+            request=request,
             user=user,
             event_type='LOGIN_SUCCESS',
             details='User logged in successfully.',
@@ -516,7 +546,8 @@ class PasswordChangeViewSet(viewsets.ViewSet):
             details='User changed their password.',
         )
 
-        models.SecurityEvent.objects.create(
+        create_security_event(
+            request=request,
             user=user,
             event_type='PASSWORD_CHANGED',
             details='User changed their password.',
@@ -638,7 +669,12 @@ class PasswordResetConfirmViewSet(viewsets.ViewSet):
 
         user.set_password(serializer.validated_data['new_password'])
         user.save()
-
+        create_security_event(
+            request=request,
+            user=user,
+            event_type='PASSWORD_CHANGED',
+            details='User password was reset successfully.',
+        )
         return Response(
             {'detail': 'Password has been reset successfully.'},
             status=status.HTTP_200_OK,
@@ -695,7 +731,8 @@ class AccountStatusViewSet(viewsets.ViewSet):
             details=details,
         )
 
-        models.SecurityEvent.objects.create(
+        create_security_event(
+            request=request,
             user=user,
             event_type=event_type,
             details=details,
@@ -722,3 +759,86 @@ class UserProfileFeedViewset(viewsets.ModelViewSet):
         """Sets the user profile to the logged in user."""
 
         serializer.save(user_profile=self.request.user)
+
+class PrivilegeManagementViewSet(viewsets.ViewSet):
+    """Allows administrators to manage user privileges."""
+
+    authentication_classes = (JWTAuthentication,)
+    permission_classes = (permissions.IsAdmin,)
+    serializer_class = serializers.UserPrivilegeSerializer
+
+    @extend_schema(
+        parameters=[
+            OpenApiParameter(
+                name='id',
+                type=int,
+                location=OpenApiParameter.PATH,
+                description='User ID.',
+            ),
+        ],
+    )
+    def partial_update(self, request, pk=None):
+        """Update staff/superuser privileges for a user."""
+
+        try:
+            user = models.UserProfile.objects.get(pk=pk)
+        except models.UserProfile.DoesNotExist:
+            return Response(
+                {'detail': 'User not found.'},
+                status=status.HTTP_404_NOT_FOUND,
+            )
+
+        serializer = self.serializer_class(data=request.data)
+        serializer.is_valid(raise_exception=True)
+
+        old_is_staff = user.is_staff
+        old_is_superuser = user.is_superuser
+
+        if 'is_staff' in serializer.validated_data:
+            user.is_staff = serializer.validated_data['is_staff']
+
+        if 'is_superuser' in serializer.validated_data:
+            user.is_superuser = serializer.validated_data['is_superuser']
+
+        user.save(update_fields=['is_staff', 'is_superuser'])
+
+        new_is_staff = user.is_staff
+        new_is_superuser = user.is_superuser
+
+        details = (
+            f'Privileges changed by {request.user.email}. '
+            f'Old: is_staff={old_is_staff}, '
+            f'is_superuser={old_is_superuser}. '
+            f'New: is_staff={new_is_staff}, '
+            f'is_superuser={new_is_superuser}.'
+        )
+
+        models.AuditLog.objects.create(
+            user=user,
+            action='ACCOUNT_CHANGE',
+            details=details,
+        )
+
+        privilege_escalated = (
+            (not old_is_staff and new_is_staff)
+            or
+            (not old_is_superuser and new_is_superuser)
+        )
+
+        if privilege_escalated:
+            create_security_event(
+                request=request,
+                user=user,
+                event_type='PRIVILEGE_ESCALATION',
+                details=details,
+            )
+
+        return Response(
+            {
+                'id': user.id,
+                'email': user.email,
+                'is_staff': user.is_staff,
+                'is_superuser': user.is_superuser,
+            },
+            status=status.HTTP_200_OK,
+        )

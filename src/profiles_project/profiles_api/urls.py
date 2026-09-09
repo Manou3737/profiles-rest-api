@@ -55,6 +55,11 @@ router.register(
     basename='account-status'
 )
 
+router.register(
+    'privileges',
+    views.PrivilegeManagementViewSet,
+    basename='privileges'
+)
 router.register('feed', views.UserProfileFeedViewset)
 
 urlpatterns = [

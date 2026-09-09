@@ -202,3 +202,9 @@ class AccountStatusSerializer(serializers.Serializer):
     """Serializer for account activation and deactivation."""
 
     is_active = serializers.BooleanField()
+
+class UserPrivilegeSerializer(serializers.Serializer):
+    """Serializer for administrator privilege management."""
+
+    is_staff = serializers.BooleanField(required=False)
+    is_superuser = serializers.BooleanField(required=False)

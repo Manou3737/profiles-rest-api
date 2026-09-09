@@ -2,13 +2,181 @@ from rest_framework.test import APIClient
 from rest_framework_simplejwt.tokens import RefreshToken, TokenError
 
 from django.contrib.auth.tokens import default_token_generator
+from django.contrib.auth import get_user_model
 from django.utils.http import urlsafe_base64_encode
 from django.utils.encoding import force_bytes
 from django.test import TestCase
 from django.core import mail
 
+from .detections import detect_brute_force
 from . import models
 from . import permissions
+
+import json
+from pathlib import Path
+from django.test import RequestFactory
+from profiles_api.siem import create_security_event
+
+class SIEMIntegrationTests(TestCase):
+    def setUp(self):
+        self.factory = RequestFactory()
+        User = get_user_model()
+
+        self.user = User.objects.create_user(
+            email="siemtest@example.com",
+            name="SIEM Test User",
+            password="TestPassword123!",
+        )
+
+        self.log_file = (
+            Path(__file__).resolve().parent.parent
+            / "logs"
+            / "security-events.jsonl"
+        )
+
+        # Make sure the directory exists.
+        self.log_file.parent.mkdir(parents=True, exist_ok=True)
+
+        # Do not unlink the file on Windows.
+        # Truncate it instead if it is not locked.
+        if self.log_file.exists():
+            with self.log_file.open("w", encoding="utf-8"):
+                pass
+
+    def test_create_security_event_writes_jsonl(self):
+        request = self.factory.post(
+            "/api/v1/privileges/10/",
+            HTTP_USER_AGENT="SIEM-Test-Agent",
+            REMOTE_ADDR="127.0.0.1",
+        )
+        request.user = self.user
+
+        event = create_security_event(
+            request=request,
+            event_type="PRIVILEGE_ESCALATION",
+            details={
+                "reason": "Automated SIEM integration test",
+                "severity": "high",
+            },
+        )
+
+        self.assertEqual(
+            event.event_type,
+            "PRIVILEGE_ESCALATION",
+        )
+        self.assertTrue(self.log_file.exists())
+
+        with self.log_file.open("r", encoding="utf-8") as file:
+            lines = file.readlines()
+
+        self.assertEqual(len(lines), 1)
+
+        data = json.loads(lines[0])
+
+        self.assertEqual(
+            data["event"]["action"],
+            "PRIVILEGE_ESCALATION",
+        )
+        self.assertEqual(
+            data["source"]["ip"],
+            "127.0.0.1",
+        )
+        self.assertEqual(
+            data["url"]["path"],
+            "/api/v1/privileges/10/",
+        )
+        self.assertEqual(
+            data["user_agent"]["original"],
+            "SIEM-Test-Agent",
+        )
+        self.assertEqual(
+            data["user"]["id"],
+            self.user.id,
+        )
+        self.assertEqual(
+            data["event"]["details"]["severity"],
+            "high",
+        )
+
+    def test_security_event_is_stored_in_database_and_jsonl(self):
+        request = self.factory.post(
+            "/api/v1/privileges/10/",
+            HTTP_USER_AGENT="SIEM-Database-Test-Agent",
+            REMOTE_ADDR="192.168.1.100",
+        )
+        request.user = self.user
+
+        event = create_security_event(
+            request=request,
+            event_type="UNAUTHORIZED_ACCESS",
+            details={
+                "reason": "Database and JSONL integration test",
+                "severity": "medium",
+            },
+        )
+
+        # Verify database persistence
+        self.assertIsNotNone(event.id)
+
+        saved_event = models.SecurityEvent.objects.get(
+            id=event.id
+        )
+
+        self.assertEqual(
+            saved_event.event_type,
+            "UNAUTHORIZED_ACCESS",
+        )
+        self.assertEqual(
+            saved_event.ip_address,
+            "192.168.1.100",
+        )
+        self.assertEqual(
+            saved_event.request_path,
+            "/api/v1/privileges/10/",
+        )
+        self.assertEqual(
+            saved_event.user_agent,
+            "SIEM-Database-Test-Agent",
+        )
+        self.assertEqual(
+            saved_event.user_id,
+            self.user.id,
+        )
+
+        # Verify JSONL persistence
+        self.assertTrue(self.log_file.exists())
+
+        with self.log_file.open("r", encoding="utf-8") as file:
+            lines = file.readlines()
+
+        self.assertEqual(len(lines), 1)
+
+        data = json.loads(lines[0])
+
+        self.assertEqual(
+            data["event"]["action"],
+            "UNAUTHORIZED_ACCESS",
+        )
+        self.assertEqual(
+            data["source"]["ip"],
+            "192.168.1.100",
+        )
+        self.assertEqual(
+            data["url"]["path"],
+            "/api/v1/privileges/10/",
+        )
+        self.assertEqual(
+            data["user_agent"]["original"],
+            "SIEM-Database-Test-Agent",
+        )
+        self.assertEqual(
+            data["user"]["id"],
+            self.user.id,
+        )
+        self.assertEqual(
+            data["event"]["details"]["severity"],
+            "medium",
+        )
 
 class HelloViewSetTests(TestCase):
     """Tests for HelloViewSet."""
@@ -791,6 +959,31 @@ class ProfileObjectPermissionTests(TestCase):
         self.assertEqual(response.status_code, 200)
         self.assertEqual(response.data['name'], 'Updated User One')
 
+        audit_log = models.AuditLog.objects.get(
+            user=self.user1,
+            action='ACCOUNT_CHANGE',
+        )
+        security_event = models.SecurityEvent.objects.get(
+            user=self.user1,
+            event_type='ACCOUNT_CHANGE',
+        )
+        self.assertIn(
+            'User profile information was changed.',
+            audit_log.details,
+        )
+        self.assertIn(
+            'User profile information was changed.',
+            security_event.details,
+        )
+        self.assertEqual(
+            security_event.ip_address,
+            '127.0.0.1',
+        )
+        self.assertEqual(
+            security_event.request_path,
+            f'/api/profile/{self.user1.id}/',
+        )
+
     def test_user_cannot_update_other_profile(self):
         """Test that a user cannot update another user's profile."""
 
@@ -1185,6 +1378,56 @@ class PasswordResetTests(TestCase):
         )
         self.assertFalse(
             self.user.check_password('OldPassword123!')
+        )
+
+    def test_password_reset_confirm_creates_security_event(self):
+        """Test that a successful password reset creates a security event."""
+
+        response = self.client.post(
+            '/api/password-reset/',
+            {'email': self.user.email},
+        )
+
+        self.assertEqual(response.status_code, 200)
+
+        payload = {
+            'uid': response.data['uid'],
+            'token': response.data['token'],
+            'new_password': 'NewPassword123!',
+            'new_password_confirm': 'NewPassword123!',
+        }
+
+        response = self.client.post(
+            '/api/password-reset-confirm/',
+            payload,
+        )
+
+        self.assertEqual(response.status_code, 200)
+
+        self.user.refresh_from_db()
+
+        self.assertTrue(
+            self.user.check_password('NewPassword123!'),
+        )
+
+        security_event = models.SecurityEvent.objects.get(
+            user=self.user,
+            event_type='PASSWORD_CHANGED',
+        )
+
+        self.assertEqual(
+            security_event.details,
+            'User password was reset successfully.',
+        )
+
+        self.assertEqual(
+            security_event.ip_address,
+            '127.0.0.1',
+        )
+
+        self.assertEqual(
+            security_event.request_path,
+            '/api/password-reset-confirm/',
         )
 
     def test_password_reset_confirm_rejects_weak_password(self):
@@ -1623,7 +1866,15 @@ class UnauthorizedAccessAuditTests(TestCase):
             f'/api/profile/{self.user2.id}/',
             security_event.details,
         )
+        self.assertEqual(
+            security_event.ip_address,
+            '127.0.0.1',
+        )
 
+        self.assertEqual(
+            security_event.request_path,
+            f'/api/profile/{self.user2.id}/',
+        )
         self.user2.refresh_from_db()
 
         self.assertEqual(
@@ -1721,3 +1972,144 @@ class AuditSecurityModelChoiceTests(TestCase):
         self.assertIn('ACCOUNT_DEACTIVATED', event_types)
         self.assertIn('ACCOUNT_CHANGE', event_types)
         self.assertIn('UNAUTHORIZED_ACCESS', event_types)
+
+class PrivilegeManagementAuditTests(TestCase):
+    """Tests privilege management and security event logging."""
+
+    def setUp(self):
+        self.client = APIClient()
+
+        self.admin = models.UserProfile.objects.create_user(
+            email='privilegeadmin@example.com',
+            name='Privilege Admin',
+            password='PrivilegeAdmin123!',
+        )
+        self.admin.is_staff = True
+        self.admin.is_superuser = True
+        self.admin.save(update_fields=['is_staff', 'is_superuser'])
+
+        self.user = models.UserProfile.objects.create_user(
+            email='privilegeuser@example.com',
+            name='Privilege User',
+            password='PrivilegeUser123!',
+        )
+
+    def test_regular_user_cannot_change_privileges(self):
+        """Test that a regular user cannot change privileges."""
+
+        self.client.force_authenticate(user=self.user)
+
+        response = self.client.patch(
+            f'/api/privileges/{self.user.id}/',
+            {'is_staff': True},
+            format='json',
+        )
+
+        self.assertEqual(response.status_code, 403)
+
+        self.user.refresh_from_db()
+
+        self.assertFalse(self.user.is_staff)
+        self.assertFalse(self.user.is_superuser)
+
+    def test_admin_promotes_user_to_staff_creates_security_event(self):
+        """Test that promoting a user to staff creates a security event."""
+
+        self.client.force_authenticate(user=self.admin)
+
+        response = self.client.patch(
+            f'/api/privileges/{self.user.id}/',
+            {'is_staff': True},
+            format='json',
+        )
+
+        self.assertEqual(response.status_code, 200)
+
+        self.user.refresh_from_db()
+
+        self.assertTrue(self.user.is_staff)
+        self.assertFalse(self.user.is_superuser)
+
+        security_event = models.SecurityEvent.objects.get(
+            user=self.user,
+            event_type='PRIVILEGE_ESCALATION',
+        )
+
+        self.assertIn(
+            'Privileges changed by privilegeadmin@example.com.',
+            security_event.details,
+        )
+
+        self.assertIn(
+            'Old: is_staff=False, is_superuser=False.',
+            security_event.details,
+        )
+
+        self.assertIn(
+            'New: is_staff=True, is_superuser=False.',
+            security_event.details,
+        )
+
+    def test_admin_promotes_user_to_superuser_creates_security_event(self):
+        """Test that promoting a user to superuser creates a security event."""
+
+        self.client.force_authenticate(user=self.admin)
+
+        response = self.client.patch(
+            f'/api/privileges/{self.user.id}/',
+            {'is_superuser': True},
+            format='json',
+        )
+
+        self.assertEqual(response.status_code, 200)
+
+        self.user.refresh_from_db()
+
+        self.assertTrue(self.user.is_superuser)
+
+        security_event = models.SecurityEvent.objects.get(
+            user=self.user,
+            event_type='PRIVILEGE_ESCALATION',
+        )
+
+        self.assertIn(
+            'Privileges changed by privilegeadmin@example.com.',
+            security_event.details,
+        )
+
+        self.assertIn(
+            'Old: is_staff=False, is_superuser=False.',
+            security_event.details,
+        )
+
+        self.assertIn(
+            'New: is_staff=False, is_superuser=True.',
+            security_event.details,
+        )
+
+    def test_removing_privileges_does_not_create_escalation_event(self):
+        """Test that removing privileges is not an escalation."""
+
+        self.user.is_staff = True
+        self.user.save(update_fields=['is_staff'])
+
+        self.client.force_authenticate(user=self.admin)
+
+        response = self.client.patch(
+            f'/api/privileges/{self.user.id}/',
+            {'is_staff': False},
+            format='json',
+        )
+
+        self.assertEqual(response.status_code, 200)
+
+        self.user.refresh_from_db()
+
+        self.assertFalse(self.user.is_staff)
+
+        self.assertFalse(
+            models.SecurityEvent.objects.filter(
+                user=self.user,
+                event_type='PRIVILEGE_ESCALATION',
+            ).exists()
+        )

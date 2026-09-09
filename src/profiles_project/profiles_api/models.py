@@ -104,11 +104,14 @@ class SecurityEvent(models.Model):
     EVENT_TYPES = (
         ('LOGIN_SUCCESS', 'Login Success'),
         ('LOGIN_FAILED', 'Login Failed'),
+        ('BRUTE_FORCE_DETECTED', 'Brute Force Detected'),
         ('PASSWORD_CHANGED', 'Password Changed'),
         ('ACCOUNT_ACTIVATED', 'Account Activated'),
         ('ACCOUNT_DEACTIVATED', 'Account Deactivated'),
         ('ACCOUNT_CHANGE', 'Account Change'),
         ('UNAUTHORIZED_ACCESS', 'Unauthorized Access'),
+        ('PRIVILEGE_ESCALATION', 'Privilege Escalation'),
+        ('SUSPICIOUS_IP_DETECTED', 'Suspicious IP Detected'),
     )
 
     user = models.ForeignKey(
@@ -117,10 +120,26 @@ class SecurityEvent(models.Model):
         null=True,
         blank=True,
     )
+
     event_type = models.CharField(
         max_length=50,
         choices=EVENT_TYPES,
     )
+
+    ip_address = models.GenericIPAddressField(
+        null=True,
+        blank=True,
+    )
+
+    user_agent = models.TextField(
+        blank=True,
+    )
+
+    request_path = models.CharField(
+        max_length=500,
+        blank=True,
+    )
+
     created_at = models.DateTimeField(auto_now_add=True)
     details = models.TextField(blank=True)
 

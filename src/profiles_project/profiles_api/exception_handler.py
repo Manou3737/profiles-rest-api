@@ -1,9 +1,11 @@
 from rest_framework.views import exception_handler
+
 from . import models
+from .siem import create_security_event
 
 
 def audit_exception_handler(exc, context):
-    """Log unauthorized access attempts."""
+    """Log authenticated unauthorized access attempts."""
 
     response = exception_handler(exc, context)
 
@@ -13,21 +15,21 @@ def audit_exception_handler(exc, context):
 
         if user is not None and user.is_authenticated:
             endpoint = request.path
+            details = (
+                f'Unauthorized access attempt to {endpoint}.'
+            )
 
             models.AuditLog.objects.create(
                 user=user,
                 action='UNAUTHORIZED_ACCESS',
-                details=(
-                    f'Unauthorized access attempt to {endpoint}.'
-                ),
+                details=details,
             )
 
-            models.SecurityEvent.objects.create(
+            create_security_event(
+                request=request,
                 user=user,
                 event_type='UNAUTHORIZED_ACCESS',
-                details=(
-                    f'Unauthorized access attempt to {endpoint}.'
-                ),
+                details=details,
             )
 
     return response

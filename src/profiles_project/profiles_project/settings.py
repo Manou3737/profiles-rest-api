@@ -22,6 +22,13 @@ else:
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = os.environ.get('DJANGO_DEBUG', 'False').lower() == 'true'
 
+SIEM_SUSPICIOUS_IPS = [
+    ip.strip()
+    for ip in os.environ.get('SIEM_SUSPICIOUS_IPS', '').split(',')
+    if ip.strip()
+]
+
+
 ALLOWED_HOSTS = [
     '3.85.4.187',
     'ec2-3-85-4-187.compute-1.amazonaws.com',
@@ -187,3 +194,38 @@ SPECTACULAR_SETTINGS = {
 }
 
 EMAIL_BACKEND = 'django.core.mail.backends.console.EmailBackend'
+
+# SIEM security event logging
+LOGGING = {
+    'version': 1,
+    'disable_existing_loggers': False,
+
+    'formatters': {
+        'siem_json': {
+            'format': '%(message)s',
+        },
+    },
+
+    'handlers': {
+        'siem_file': {
+            'class': 'logging.handlers.RotatingFileHandler',
+            'filename': os.path.join(
+                BASE_DIR,
+                'logs',
+                'security-events.jsonl',
+            ),
+            'maxBytes': 10 * 1024 * 1024,
+            'backupCount': 5,
+            'formatter': 'siem_json',
+            'encoding': 'utf-8',
+        },
+    },
+
+    'loggers': {
+        'siem': {
+            'handlers': ['siem_file'],
+            'level': 'INFO',
+            'propagate': False,
+        },
+    },
+}
